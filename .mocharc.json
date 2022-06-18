@@ -1,0 +1,9 @@
+{
+  "loader": "ts-node/esm",
+  "spec": [
+    "test/handle/serializer.test.ts"
+  ],
+  "watch-files": [
+    "src"
+  ]
+}
