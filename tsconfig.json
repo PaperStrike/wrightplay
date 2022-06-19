@@ -15,7 +15,7 @@
     "sourceMap": true,
     "strict": true,
     "stripInternal": true,
-    "target": "ES2022",
+    "target": "ES2019",
     "useDefineForClassFields": true
   },
   "include": ["./src"],
