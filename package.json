@@ -81,6 +81,7 @@
     "@types/ws": "^8.5.3",
     "@typescript-eslint/eslint-plugin": "^5.28.0",
     "@typescript-eslint/parser": "^5.28.0",
+    "@typescript/lib-dom": "npm:@types/web@0.0.68",
     "c8": "^7.11.3",
     "eslint": "^8.18.0",
     "eslint-config-airbnb-typescript": "^17.0.0",
