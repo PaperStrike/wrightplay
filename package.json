@@ -44,6 +44,9 @@
     "test-handle": "ts-node-esm src/cli.ts test/handle/*.test.*",
     "test-route": "ts-node-esm src/cli.ts test/route/*.test.*",
     "test": "ts-node-esm src/cli.ts sw=test/entry/sw.ts test/**/*.test.ts !**/third-party",
+    "test-chromium": "npm test -- --browser chromium",
+    "test-firefox": "npm test -- --browser firefox",
+    "test-webkit": "npm test -- --browser webkit",
     "report-coverage": "c8 -a report"
   },
   "files": [

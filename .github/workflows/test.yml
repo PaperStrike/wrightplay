@@ -31,6 +31,10 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [ chromium, firefox, webkit ]
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-node@v2
@@ -38,4 +42,5 @@ jobs:
           cache: 'npm'
           node-version: '14'
       - run: npm ci
-      - run: npm test
+      - run: npx playwright install --with-deps ${{ matrix.browser }}
+      - run: npm run test-${{ matrix.browser }}
