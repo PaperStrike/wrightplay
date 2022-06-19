@@ -36,8 +36,8 @@ jobs:
       matrix:
         browser: [ chromium, firefox, webkit ]
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-node@v2
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
         with:
           cache: 'npm'
           node-version: '14'
