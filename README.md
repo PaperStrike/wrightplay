@@ -1,5 +1,6 @@
 # wrightplay
 
+[![Build Status](https://github.com/PaperStrike/wrightplay/actions/workflows/test.yml/badge.svg)](https://github.com/PaperStrike/wrightplay/actions/workflows/test.yml)
 [![npm Package](https://img.shields.io/npm/v/wrightplay?logo=npm "wrightplay")](https://www.npmjs.com/package/wrightplay)
 
 Playwright needs you focus on Node.js side (e2e test), wrightplay draws you back to the browsers (unit test).
