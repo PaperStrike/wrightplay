@@ -2,7 +2,7 @@
 
 import { createRequire } from 'node:module';
 import { Command } from 'commander';
-import Runner, { BrowserTypeName, RunnerOptions } from './Runner.js';
+import Runner, { BrowserTypeName, BrowserServerOptions, RunnerOptions } from './Runner.js';
 import { ConfigOptions } from './node.js';
 import configSearcher from './configSearcher.js';
 
@@ -11,6 +11,8 @@ const pkgJSON = require('../package.json') as {
   name: string;
   version: string;
 };
+
+const parseJSON = (str: string) => JSON.parse(str) as unknown;
 
 export const program = new Command();
 
@@ -25,6 +27,7 @@ program
   .option('-s, --setup <file>', 'File to run before the test files')
   .option('--build-max-age <seconds>', 'Number of seconds the test build remains fresh after the test is built. Defaults to 2', Number)
   .option('-b, --browser <browser>', 'Type of the browser. One of: "chromium", "firefox", "webkit". Defaults to "chromium"')
+  .option('--browser-server-options <json>', 'Options used to launch the test browser server. Defaults to the Playwright defaults', parseJSON)
   .option('-d, --debug', 'Run browser in headed mode. Defaults to `false`')
   .option('--no-cov', 'Disable coverage file output. This only matters when `NODE_V8_COVERAGE` is set. Defaults to `false` on chromium, `true` on firefox and webkit');
 
@@ -34,6 +37,7 @@ export interface CLIOptions {
   setup?: string;
   buildMaxAge?: number;
   browser?: BrowserTypeName; // not enforced. error by Playwright if any.
+  browserServerOptions?: BrowserServerOptions; // not enforced, too.
   debug?: boolean;
   cov: boolean; // required member according to `commander`
 }
