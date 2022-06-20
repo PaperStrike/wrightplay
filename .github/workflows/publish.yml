@@ -1,8 +1,9 @@
 name: Publish
 
 on:
-  release:
-    types: [published]
+  push:
+    tags:
+      - 'v*.*.*'
 
 jobs:
   publish:
@@ -15,6 +16,7 @@ jobs:
           node-version: '14'
           registry-url: https://registry.npmjs.org/
       - run: npm ci
+      - run: npm version ${{ github.ref_name }} --no-git-tag-version
       - run: npm publish --access public
         env:
-          NODE_AUTH_TOKEN: ${{secrets.NPM_TOKEN}}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
