@@ -45,7 +45,7 @@ npx playwright install
 npx playwright install <browser...>
 ```
 
-To use browsers available on the machine, use [`channel`](https://playwright.dev/docs/api/class-browsertype#browser-type-launch-server-option-channel) via [`browserServerOptions`](#browser-server-options).
+To use browsers available on the machine, use [`channel`](https://playwright.dev/docs/api/class-browsertype#browser-type-launch-server-option-channel) via [`browserServerOptions`](#browserserveroptions).
 
 For CI environments, check out
 * [Install system dependencies · Command line tools | Playwright](https://playwright.dev/docs/cli#install-system-dependencies).
@@ -246,11 +246,13 @@ export default config;
 ```shell
 wrightplay --config path/to/config/file
 
-# Omit to auto find
+# Omit to use default
 wrightplay
 ```
 
-Path to config file. CLI-only option. The CLI checks these files by default:
+CLI-only option.
+
+Path to config file. The CLI checks these files by default:
 
 ```ts
 [
@@ -280,27 +282,112 @@ Although the CLI checks TypeScript config files, it doesn't handle the load proc
 cross-env NODE_OPTIONS="--loader ts-node/esm" wrightplay
 ```
 
-Loader is not required for TypeScript [test files](#tests) and [entry points](#entry-points). It is only required for TypeScript config files.
+Loader is not required for TypeScript [test files](#tests) and [entry points](#entrypoints). It is only required for TypeScript config files.
 
 ### setup
 
+```shell
+wrightplay -s <path/to/setup>
+wrightplay --setup <path/to/setup>
+```
+
+File to run before the test files.
+
 ### tests
 
-### entry points
+```shell
+wrightplay [pattern...]
+```
 
-### build max age
+Patterns for the target test files. Check out [`globby`](https://www.npmjs.com/package/globby) for supported patterns.
+
+### entryPoints
+
+```shell
+wrightplay [entry...]
+```
+
+Additional entry points to build. You can use this option to build workers.
+
+In CLI, use format `name=path/to/entry`. For example,
+
+```shell
+wrightplay worker=test/web-worker-helper.ts
+```
+
+or config file
+
+```json
+{
+  "entryPoints": {
+    "worker": "test/web-worker.ts"
+  }
+}
+```
+
+will make this available:
+
+```ts
+const worker = new Worker('/worker.js');
+// ...
+```
+
+### buildMaxAge
+
+```shell
+wrightplay --build-max-age <seconds>
+```
+
+Number of seconds the test build remains fresh after the test is built. Defaults to 2.
+
+This means you can start wrightplay, make some changes to your code, refresh the browser, then get the latest test results without a restart, as long as the refresh happens more than `buildMaxAge` seconds later than the beginning. You may need [`headless`](#headless) or [`debug`](#debug) options to click the refresh button.
 
 ### browser
 
-### browser server options
+```shell
+wrightplay -b <browser>
+wrightplay --browser <browser>
+```
+
+Browser type. One of: `chromium`, `firefox`, `webkit`. Defaults to `chromium`.
+
+### browserServerOptions
+
+```shell
+wrightplay --browser-server-options <json>
+```
+
+Options used to launch the browser server. See [`browserType.launchServer([options])` in Playwright](https://playwright.dev/docs/api/class-browsertype#browser-type-launch-server) for details.
 
 ### headless
 
-### no cov
+In CLI, use [`--debug`](#debug).
+
+Run the browser in headless mode. Defaults to `true` unless the
+`devtools` option (in [`browserServerOptions`](#browserserveroptions)) is `true`.
+
+### debug
+
+```shell
+wrightplay -d
+wrightplay --debug
+```
+
+CLI-only option.
+
+This sets `devtools` (in [`browserServerOptions`](#browserserveroptions)) to `true` and [`headless`](#headless) to `false`.
+
+### noCov
+
+```shell
+wrightplay --no-cov
+```
+
+Disable coverage file output. This only matters when `NODE_V8_COVERAGE` is set. Defaults to `false` on chromium, `true` on firefox and webkit.
 
 ### cwd
 
-Current working directory. Defaults to `process.cwd()`
+Current working directory. Defaults to `process.cwd()`.
 
 ## Working with...
 
