@@ -12,7 +12,7 @@ import getPort, { portNumbers } from 'get-port';
 import esbuild from 'esbuild';
 import sirv from 'sirv';
 
-import BrowserLog from './BrowserLog.js';
+import BrowserLogger from './BrowserLogger.js';
 import CoverageReporter from './CoverageReporter.js';
 import WSServer from './WS/WSServer.js';
 
@@ -358,7 +358,7 @@ window.dispatchEvent(new CustomEvent('__wrightplay_${this.uuid}_init__'))`,
     });
 
     const { cwd, browserType, sourceMapPayloads } = this;
-    const bLog = new BrowserLog({
+    const bLog = new BrowserLogger({
       cwd,
       browserType,
       sourceMapPayloads,

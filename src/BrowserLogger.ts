@@ -69,7 +69,7 @@ export interface PrintOptions {
   color?: (text: string) => string;
 }
 
-export default class BrowserLog {
+export default class BrowserLogger {
   readonly cwd: string;
 
   readonly browserType: 'chromium' | 'firefox' | 'webkit';
