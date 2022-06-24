@@ -9,6 +9,7 @@ export interface SerializedValue {
   n?: number | boolean | string | null;
   v?: 'undefined' | 'NaN' | 'Infinity' | '-Infinity' | '-0';
   b?: string; // BigInt
+  u?: string; // URL
   d?: string; // Date
   r?: {
     p: string;
@@ -89,6 +90,8 @@ const innerParseSerializedValue = (
     }
   } else if (value.b !== undefined) {
     parsed = BigInt(value.b);
+  } else if (value.u !== undefined) {
+    parsed = new URL(value.u);
   } else if (value.d !== undefined) {
     parsed = new Date(value.d);
   } else if (value.r !== undefined) {
@@ -136,6 +139,7 @@ export const innerSerializeValue = (
   if (typeof value === 'boolean') return { i, n: value };
   if (typeof value === 'string') return { i, n: value };
   if (typeof value === 'bigint') return { i, b: value.toString() };
+  if (value instanceof URL) return { i, u: value.toJSON() };
   if (value instanceof Date) return { i, d: value.toJSON() };
   if (value instanceof RegExp) return { i, r: { p: value.source, f: value.flags } };
   if (value instanceof Handle) return { i, h: value.id };
