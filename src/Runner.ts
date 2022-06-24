@@ -452,6 +452,8 @@ window.dispatchEvent(new CustomEvent('__wrightplay_${this.uuid}_init__'))`,
       await coverageReporter.save(this.reportCoverageDir as string);
     }
 
+    page.off('console', bLog.forwardConsole);
+    page.off('pageerror', bLog.forwardError);
     await bLog.lastPrint;
 
     if (this.headless) {
