@@ -6,7 +6,6 @@
     "noEmit": true,
     "paths": {
       // these don't support TS 4.7 Node16+ resolution yet
-      "uvu": ["./node_modules/uvu/index.d.ts"],
       "zora": ["./node_modules/zora/dist/zora.d.ts"]
     },
     "rootDir": "../",
