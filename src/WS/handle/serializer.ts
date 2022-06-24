@@ -1,7 +1,7 @@
 import Handle from './Handle.js';
 
 export type SerializableValue =
-  | number | boolean | string | null | undefined | bigint | Date | Error | RegExp | Handle
+  | number | boolean | string | null | undefined | bigint | URL | Date | Error | RegExp | Handle
   | SerializableValue[] | { [K: string]: SerializableValue };
 
 export interface SerializedValue {
@@ -116,6 +116,22 @@ export const parseSerializedValue = (
   innerParseSerializedValue(value, handleTargets, new Map())
 );
 
+function isURL(obj: unknown, objStr: string): obj is URL {
+  return obj instanceof URL || objStr === '[object URL]';
+}
+
+function isDate(obj: unknown, objStr: string): obj is Date {
+  return obj instanceof Date || objStr === '[object Date]';
+}
+
+function isRegExp(obj: unknown, objStr: string): obj is RegExp {
+  return obj instanceof RegExp || objStr === '[object RegExp]';
+}
+
+function isError(obj: unknown, objStr: string): obj is Error {
+  return obj instanceof Error || objStr === '[object Error]';
+}
+
 export const noFallback = Symbol('indicate no fallback value on serialize');
 
 export const innerSerializeValue = (
@@ -139,11 +155,12 @@ export const innerSerializeValue = (
   if (typeof value === 'boolean') return { i, n: value };
   if (typeof value === 'string') return { i, n: value };
   if (typeof value === 'bigint') return { i, b: value.toString() };
-  if (value instanceof URL) return { i, u: value.toJSON() };
-  if (value instanceof Date) return { i, d: value.toJSON() };
-  if (value instanceof RegExp) return { i, r: { p: value.source, f: value.flags } };
   if (value instanceof Handle) return { i, h: value.id };
-  if (value instanceof Error) {
+  const valueObjStr = Object.prototype.toString.call(value);
+  if (isURL(value, valueObjStr)) return { i, u: value.toJSON() };
+  if (isDate(value, valueObjStr)) return { i, d: value.toJSON() };
+  if (isRegExp(value, valueObjStr)) return { i, r: { p: value.source, f: value.flags } };
+  if (isError(value, valueObjStr)) {
     return {
       i,
       e: {

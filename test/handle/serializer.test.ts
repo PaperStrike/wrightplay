@@ -58,6 +58,13 @@ describe('serializer', () => {
     expect(parse(bi)).toBe(bi);
   });
 
+  it('should properly serialize URL', () => {
+    const url = new URL('https://example.com/');
+    const parsed = parse(url);
+    expect(parsed).toBeInstanceOf(URL);
+    expect(parsed.toJSON()).toBe(url.toJSON());
+  });
+
   it('should properly serialize Date', () => {
     const date = new Date('2022-06-17T17:56:43.674Z');
     const parsed = parse(date);
