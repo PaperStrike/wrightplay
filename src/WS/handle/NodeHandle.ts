@@ -12,13 +12,21 @@ import {
 } from './serializer.js';
 
 export type Unboxed<Arg> =
-  Arg extends NodeHandle<infer T>
-    ? T
-    : Arg extends [infer A0, ...infer Rest]
-      ? [Unboxed<A0>, ...Unboxed<Rest>]
-      : Arg extends object
-        ? { [Key in keyof Arg]: Unboxed<Arg[Key]> }
-        : Arg;
+  Arg extends URL
+    ? URL
+    : Arg extends Date
+      ? Date
+      : Arg extends RegExp
+        ? RegExp
+        : Arg extends Error
+          ? Error
+          : Arg extends NodeHandle<infer T>
+            ? T
+            : Arg extends [infer A0, ...infer Rest]
+              ? [Unboxed<A0>, ...Unboxed<Rest>]
+              : Arg extends object
+                ? { [Key in keyof Arg]: Unboxed<Arg[Key]> }
+                : Arg;
 export type NodeFunctionOn<On, Arg2, R> =
   string | ((on: On, arg2: Unboxed<Arg2>) => R | Promise<R>);
 
