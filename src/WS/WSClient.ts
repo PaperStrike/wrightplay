@@ -51,22 +51,34 @@ export default class WSClient {
   }
 
   /**
-   * Resolve at a later message.
+   * Promise of the current status switching.
+   */
+  private statusPromise: null | Promise<void> = null;
+
+  /**
+   * Resolve status at a later message.
    */
   private statusResolve: null | ((status: 'on' | 'off') => void) = null;
 
   private async toggleServerRoute(status: 'on' | 'off') {
-    const response = new Promise<'on' | 'off'>((resolve) => {
-      this.statusResolve = resolve;
-    });
-    await this.wsReady;
-    this.ws.send(createRouteMeta({
-      action: 'toggle',
-      to: status,
-    }));
-    if (await response !== status) {
-      throw new Error(`Server failed to switch ${status}`);
+    if (this.statusPromise !== null) {
+      await this.statusPromise;
+      return;
     }
+    this.statusPromise = (async () => {
+      const response = new Promise<'on' | 'off'>((resolve) => {
+        this.statusResolve = resolve;
+      });
+      await this.wsReady;
+      this.ws.send(createRouteMeta({
+        action: 'toggle',
+        to: status,
+      }));
+      if (await response !== status) {
+        throw new Error(`Server failed to switch ${status}`);
+      }
+    })();
+    await this.statusPromise;
   }
 
   bypassFetch(...fetchArgs: Parameters<typeof fetch>) {
@@ -104,6 +116,7 @@ export default class WSClient {
       }
       this.statusResolve(meta.to);
       this.statusResolve = null;
+      this.statusPromise = null;
       return;
     }
     let body: Blob | undefined;
