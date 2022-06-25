@@ -452,11 +452,10 @@ window.dispatchEvent(new CustomEvent('__wrightplay_${this.uuid}_init__'))`,
       await coverageReporter.save(this.reportCoverageDir as string);
     }
 
-    page.off('console', bLog.forwardConsole);
-    page.off('pageerror', bLog.forwardError);
-    await bLog.lastPrint;
-
     if (this.headless) {
+      page.off('console', bLog.forwardConsole);
+      page.off('pageerror', bLog.forwardError);
+      await bLog.lastPrint;
       await page.close();
     } else if (!page.isClosed()) {
       await page.waitForEvent('close', { timeout: 0 });
