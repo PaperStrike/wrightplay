@@ -16,6 +16,7 @@ const {
   mocha.setup({
     ui: 'bdd',
     reporter: 'spec',
+    color: true,
   });
 
   onInit(() => {
