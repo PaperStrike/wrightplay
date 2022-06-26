@@ -418,6 +418,7 @@ import { onInit, done } from 'wrightplay';
 mocha.setup({
   ui: 'bdd',
   reporter: 'spec',
+  color: true,
 });
 
 onInit(() => {
