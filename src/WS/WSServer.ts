@@ -39,10 +39,17 @@ export default class WSServer {
     this.wss.on('connection', (ws) => {
       ws.addEventListener('message', (event) => {
         if (event.data !== uuid) return;
+        ws.once('close', () => {
+          this.client = undefined;
+        });
         ws.addEventListener('message', this.onMessage);
         this.client = ws;
       }, { once: true });
     });
+  }
+
+  hasClient() {
+    return this.client !== undefined;
   }
 
   async reset() {

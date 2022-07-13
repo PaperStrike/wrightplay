@@ -430,8 +430,11 @@ window.dispatchEvent(new CustomEvent('__wrightplay_${this.uuid}_init__'))`,
       : false;
 
     let exitCodePromise = run();
-    page.on('framenavigated', (frame) => {
-      if (frame !== page.mainFrame()) return;
+    page.on('load', () => {
+      // Playwright has no direct and reliable API that listens to the initial load
+      // or DOMContentLoaded events for the main frame only.
+      // We use our own WebSocket connection to detect that.
+      if (wsServer.hasClient()) return;
       exitCodePromise = run();
     });
 
