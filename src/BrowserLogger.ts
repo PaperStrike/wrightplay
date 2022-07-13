@@ -191,25 +191,25 @@ export default class BrowserLogger {
       level = 'log',
       color,
     }: PrintOptions,
-    ...messages: unknown[]
+    messages: unknown[] | Promise<unknown[]>,
   ) {
     // eslint-disable-next-line no-console
     const logFn = console[level] as (...args: unknown[]) => void;
 
-    this.lastPrint = this.lastPrint
-      .then(() => {
+    this.lastPrint = Promise.all([messages, this.lastPrint])
+      .then(([msgList]) => {
         if (level === 'table') {
           if (color) {
             // eslint-disable-next-line no-console
             console.warn('color option is ignored when using table logger');
           }
-          logFn(...messages);
+          logFn(...msgList);
           return;
         }
 
         const formatted = color
-          ? color(util.format(...messages))
-          : util.formatWithOptions({ colors: true }, ...messages);
+          ? color(util.format(...msgList))
+          : util.formatWithOptions({ colors: true }, ...msgList);
 
         logFn(this.mapStack(formatted));
       });
@@ -261,14 +261,14 @@ export default class BrowserLogger {
       case 'countReset':
       case 'timeLog':
       case 'timeEnd':
-        this.print(message.text());
+        this.print([message.text()]);
         return;
       case 'assert': {
         const { url, lineNumber, columnNumber } = message.location();
-        this.error(
+        this.error([
           'Assertion failed: console.assert',
           `\b\n${this.stackTracePrefix}${url}:${lineNumber + 1}:${columnNumber + 1}`,
-        );
+        ]);
         return;
       }
       default:
@@ -284,18 +284,15 @@ export default class BrowserLogger {
         case 'debug':
         case 'warn':
         case 'error':
-          this[level](text);
+          this[level]([text]);
           break;
         default:
-          this.print(text);
+          this.print([text]);
       }
       return;
     }
 
-    const { lastPrint } = this;
-
-    // Occupy the print promise immediately.
-    this.lastPrint = (async () => {
+    const argsPromise = (async () => {
       /**
        * Parse the type of the first argument and the JSON presentation of each argument.
        * `evaluate` does the exact same serialize steps as `jsonValue` but a lot quicker
@@ -316,38 +313,35 @@ export default class BrowserLogger {
         args[0] = args[0].replace(/%/g, '%%');
       }
 
-      // Expose the last print promise to a later print call.
-      // Will be immediately handled and replaced.
-      this.lastPrint = lastPrint;
+      return args;
+    })();
 
-      switch (level) {
-        case 'info':
-        case 'debug':
-        case 'warn':
-        case 'error':
-          this[level](...args);
-          break;
-        case 'table':
-        case 'group':
-        case 'groupCollapsed':
-        case 'groupEnd':
-          this.printWithOptions({ level }, ...args);
-          break;
-        case 'trace': {
-          const { url, lineNumber, columnNumber } = message.location();
-          this.print(
+    switch (level) {
+      case 'info':
+      case 'debug':
+      case 'warn':
+      case 'error':
+        this[level](argsPromise);
+        break;
+      case 'table':
+      case 'group':
+      case 'groupCollapsed':
+      case 'groupEnd':
+        this.printWithOptions({ level }, argsPromise);
+        break;
+      case 'trace': {
+        const { url, lineNumber, columnNumber } = message.location();
+        this.print(
+          argsPromise.then((args) => [
             ...args,
             `\b\n${this.stackTracePrefix}${url}:${lineNumber + 1}:${columnNumber + 1}`,
-          );
-          break;
-        }
-        default:
-          this.print(...args);
+          ]),
+        );
+        break;
       }
-
-      // The real print promise reintroduced in a previous print call
-      await this.lastPrint;
-    })();
+      default:
+        this.print(argsPromise);
+    }
   };
 
   /**
@@ -356,14 +350,16 @@ export default class BrowserLogger {
   readonly forwardError = (error: Error) => {
     // Leave errors without stack info as they are.
     if (!error.stack) {
-      this.error(error);
+      this.error([error]);
       return;
     }
 
     // Prefix with "uncaught" and use browser style prefix.
-    this.error(this.uncaughtErrorPrefix + error.stack.replace(
-      /(?<=^|\n) {4}at /g,
-      this.stackTracePrefix,
-    ));
+    this.error([
+      this.uncaughtErrorPrefix + error.stack.replace(
+        /(?<=^|\n) {4}at /g,
+        this.stackTracePrefix,
+      ),
+    ]);
   };
 }
