@@ -50,19 +50,15 @@ export default class WSServer {
     this.resetHandleTargets();
   }
 
-  private routing = false;
-
   private readonly routeList: playwright.Route[] = [];
 
   private async unsetRoute() {
     await this.page.unroute('', this.handler);
     this.routeList.length = 0;
-    this.routing = false;
   }
 
   private async startRoute() {
     await this.page.route('', this.handler);
-    this.routing = true;
   }
 
   private bypassNextMessage = false;
@@ -94,9 +90,9 @@ export default class WSServer {
     originalText: string,
   ) {
     if (meta.action === 'toggle') {
-      if (meta.to === 'on' && !this.routing) {
+      if (meta.to === 'on') {
         await this.startRoute();
-      } else if (meta.to === 'off' && this.routing) {
+      } else if (meta.to === 'off') {
         await this.unsetRoute();
       }
       source.send(originalText);
