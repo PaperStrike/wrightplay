@@ -24,9 +24,10 @@ export default class Route {
    */
   startHandling() {
     return new Promise<boolean>((resolve) => {
-      this.handleResolve = resolve;
-    }).finally(() => {
-      this.handleResolve = null;
+      this.handleResolve = (done) => {
+        this.handleResolve = null;
+        resolve(done);
+      };
     });
   }
 
