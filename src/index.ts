@@ -52,4 +52,4 @@ const wsClient = new WSClient(uuid);
 export const pageRoute = wsClient.addRoute.bind(wsClient);
 export const pageUnroute = wsClient.removeRoute.bind(wsClient);
 export const bypassFetch = wsClient.bypassFetch.bind(wsClient);
-export const { pageHandle } = wsClient;
+export const { pageHandle, contextHandle } = wsClient;
