@@ -132,28 +132,20 @@ export default class WSClient {
     const route = new Route(this.ws, meta.id, request);
     const requestURL = new URL(meta.url, window.location.origin);
     const handlers = this.routes.filter((r) => r.matches(requestURL));
-    const handleNext = async () => {
-      const handler = handlers.shift();
-      if (!handler) {
-        await route.finalContinue();
-        return;
-      }
+
+    // eslint-disable-next-line no-restricted-syntax
+    for (const handler of handlers) {
       if (handler.willExpire()) {
         this.routes.splice(this.routes.indexOf(handler), 1);
       }
-      await new Promise<void>((resolve) => {
-        handler.handle(route, request, async (done) => {
-          if (!done) {
-            await handleNext();
-          }
-          resolve();
-        });
-      });
-    };
-    await handleNext();
-    if (this.routes.length === 0) {
-      await this.toggleServerRoute('off');
+      // eslint-disable-next-line no-await-in-loop
+      const handled = await handler.handle(route, request);
+      if (this.routes.length === 0) {
+        this.toggleServerRoute('off').catch(() => {});
+      }
+      if (handled) return;
     }
+    await route.innerContinue();
   }
 
   readonly pageHandle: NodeHandle<playwright.Page>;

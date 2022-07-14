@@ -1,6 +1,5 @@
 import globToRegex from '../../util/globToRegex.js';
 import type Route from './Route.js';
-import type { RouteChain } from './Route.js';
 import type RouteRequest from './RouteRequest.js';
 
 export type RouteMatcher = string | RegExp | ((url: URL) => boolean);
@@ -58,9 +57,10 @@ export default class RouteHandler {
     return this.parsedMatcher(url);
   }
 
-  handle(route: Route, request: RouteRequest, chain: RouteChain) {
+  handle(route: Route, request: RouteRequest): Promise<boolean> {
     this.handledCount += 1;
-    route.setChain(chain);
+    const handlePromise = route.startHandling();
     this.handler(route, request);
+    return handlePromise;
   }
 }

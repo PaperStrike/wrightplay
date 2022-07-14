@@ -3,7 +3,7 @@ import type RouteRequest from './RouteRequest.js';
 
 export type RouteChain = (done: boolean) => Promise<void>;
 
-type OverridesForContinue = {
+export type FallbackOverrides = {
   url?: string;
   method?: string;
   headers?: Record<string, string>;
@@ -17,18 +17,26 @@ export default class Route {
     private readonly req: RouteRequest,
   ) {}
 
-  private chain: RouteChain | null = null;
-
-  private continueOverrides: OverridesForContinue | undefined;
-
-  private resolveID = 0;
+  protected handleResolve: ((done: boolean) => void) | null = null;
 
   /**
    * @internal
    */
-  setChain(routeChain: RouteChain) {
-    this.chain = routeChain;
+  startHandling() {
+    return new Promise<boolean>((resolve) => {
+      this.handleResolve = resolve;
+    }).finally(() => {
+      this.handleResolve = null;
+    });
   }
+
+  private assertNotHandled(): asserts this is { handleResolve: NonNullable<Route['handleResolve']> } {
+    if (this.handleResolve === null) {
+      throw new Error('Route is already handled!');
+    }
+  }
+
+  private resolveID = 0;
 
   private async waitServerResolve() {
     const { resolveID } = this;
@@ -56,13 +64,13 @@ export default class Route {
   /**
    * @internal
    */
-  async finalContinue() {
+  async innerContinue() {
     const {
       postData,
       headers,
       method,
       url,
-    } = this.continueOverrides || {};
+    } = this.req.fallbackOverridesForContinue();
     const hasPostData = postData !== undefined && postData !== null;
     this.ws.send(createRouteMeta({
       action: 'continue',
@@ -77,14 +85,14 @@ export default class Route {
     await this.waitServerResolve();
   }
 
-  private async followChain(done: boolean) {
-    const { chain } = this;
-    if (!chain) return; // TODO: Error elsewhere
-    this.chain = null;
-    await chain(done);
+  async fallback(options?: FallbackOverrides) {
+    this.assertNotHandled();
+    this.req.applyFallbackOverrides(options);
+    this.handleResolve(false);
   }
 
   async abort(errorCode?: string) {
+    this.assertNotHandled();
     this.ws.send(createRouteMeta({
       action: 'abort',
       id: this.id,
@@ -92,16 +100,14 @@ export default class Route {
       errorCode,
     }));
     await this.waitServerResolve();
-    await this.followChain(true);
+    this.handleResolve(true);
   }
 
-  async continue(options: OverridesForContinue) {
-    // Intended early throw
-    if (!this.chain) {
-      throw new Error('Route is already handled!');
-    }
-    this.continueOverrides = { ...this.continueOverrides, ...options };
-    await this.followChain(false);
+  async continue(options?: FallbackOverrides) {
+    this.assertNotHandled();
+    this.req.applyFallbackOverrides(options);
+    await this.innerContinue();
+    this.handleResolve(true);
   }
 
   async fulfill({
@@ -119,6 +125,7 @@ export default class Route {
     response?: Response;
     status?: number;
   } = {}) {
+    this.assertNotHandled();
     let fulfillBody = body;
     if (fulfillBody === undefined) {
       const responseAB = await response?.clone().arrayBuffer();
@@ -146,7 +153,7 @@ export default class Route {
     }));
     if (hasBody) this.ws.send(fulfillBody as NonNullable<typeof fulfillBody>);
     await this.waitServerResolve();
-    await this.followChain(true);
+    this.handleResolve(true);
   }
 
   request() {
