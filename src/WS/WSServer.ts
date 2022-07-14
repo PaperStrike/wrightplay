@@ -22,15 +22,15 @@ export default class WSServer {
 
   private readonly wss: WebSocketServer;
 
-  private readonly page: playwright.Page;
+  private readonly context: playwright.BrowserContext;
 
   private client: WebSocket | undefined;
 
   constructor(uuid: string, server: http.Server, page: playwright.Page) {
     this.uuid = uuid;
-    this.page = page;
+    this.context = page.context();
 
-    this.handleTargets = [page, page.context()];
+    this.handleTargets = [page, this.context];
 
     this.wss = new WebSocketServer({
       server,
@@ -60,12 +60,12 @@ export default class WSServer {
   private readonly routeList: playwright.Route[] = [];
 
   private async unsetRoute() {
-    await this.page.unroute('', this.handler);
+    await this.context.unroute('', this.handler);
     this.routeList.length = 0;
   }
 
   private async startRoute() {
-    await this.page.route('', this.handler);
+    await this.context.route('', this.handler);
   }
 
   private bypassNextMessage = false;

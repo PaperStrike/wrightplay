@@ -49,7 +49,7 @@ export const onInit = (callback: InitCallback) => {
 };
 
 const wsClient = new WSClient(uuid);
-export const pageRoute = wsClient.addRoute.bind(wsClient);
-export const pageUnroute = wsClient.removeRoute.bind(wsClient);
+export const contextRoute = wsClient.addRoute.bind(wsClient);
+export const contextUnroute = wsClient.removeRoute.bind(wsClient);
 export const bypassFetch = wsClient.bypassFetch.bind(wsClient);
 export const { pageHandle, contextHandle } = wsClient;

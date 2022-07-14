@@ -120,7 +120,7 @@ APIs similar to [`JSHandle` in Playwright](https://playwright.dev/docs/api/class
 
 Just like you can pass a function from node to browser to run via `page.evaluate` in Playwright, you can pass a function from browser to node via `pageHandle.evaluate` in wrightplay.
 
-`pageHandle` represents the [`Page`](https://playwright.dev/docs/api/class-page) Playwright instance that controls the current page.
+`pageHandle` and `contextHandle` represent the [`Page`](https://playwright.dev/docs/api/class-page) and [`BrowserContext`](https://playwright.dev/docs/api/class-browsercontext) Playwright instance that controls the current page respectively.
 
 ### Evaluate
 
@@ -167,15 +167,15 @@ Similar to [`JSHandle.jsonValue` in Playwright](https://playwright.dev/docs/api/
 
 ## Route
 
-Dedicated API faster than wrapping `pageHandle.evaluate` for routing, uses `ArrayBuffer` and `Blob` for binary data. The handler callback stays in the browser and has access to all the scopes like a normal function has. 
+Dedicated API faster than wrapping `contextRoute.evaluate` for routing, uses `ArrayBuffer` and `Blob` for binary data. The handler callback stays in the browser and has access to all the scopes like a normal function has. 
 
-Similar to [`page.route` in Playwright](https://playwright.dev/docs/api/class-page#page-route).
+Similar to [`browserContext.route` in Playwright](https://playwright.dev/docs/api/class-browsercontext#browser-context-route).
 
 ```ts
-import { pageRoute } from 'wrightplay';
+import { contextRoute } from 'wrightplay';
 
 const body = new Blob(['routed!']);
-await pageRoute('hello', (r) => {
+await contextRoute('hello', (r) => {
   r.fulfill({ body });
 }, { times: 1 });
 
@@ -187,7 +187,7 @@ All the routes by this API will auto “unroute” on page unload.
 
 ### Unroute
 
-Similar to [`page.unroute` in Playwright](https://playwright.dev/docs/api/class-page#page-unroute).
+Similar to [`browserContext.unroute` in Playwright](https://playwright.dev/docs/api/class-browsercontext#browser-context-unroute).
 
 ## Coverage
 
