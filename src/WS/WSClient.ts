@@ -26,6 +26,7 @@ export default class WSClient {
       }, { once: true });
     });
     this.pageHandle = new NodeHandle(0, this.ws);
+    this.contextHandle = new NodeHandle(1, this.ws);
   }
 
   private routes: RouteHandler[] = [];
@@ -149,4 +150,6 @@ export default class WSClient {
   }
 
   readonly pageHandle: NodeHandle<playwright.Page>;
+
+  readonly contextHandle: NodeHandle<playwright.BrowserContext>;
 }

@@ -30,7 +30,7 @@ export default class WSServer {
     this.uuid = uuid;
     this.page = page;
 
-    this.handleTargets = [this.page];
+    this.handleTargets = [page, page.context()];
 
     this.wss = new WebSocketServer({
       server,
@@ -203,10 +203,10 @@ export default class WSServer {
       .catch(console.error);
   };
 
-  private readonly handleTargets: [playwright.Page, ...unknown[]];
+  private readonly handleTargets: [playwright.Page, playwright.BrowserContext, ...unknown[]];
 
   private resetHandleTargets() {
-    this.handleTargets.length = 1;
+    this.handleTargets.length = 2;
   }
 
   private createHandleID(target: unknown) {
