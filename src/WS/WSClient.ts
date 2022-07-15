@@ -117,10 +117,10 @@ export default class WSClient {
       this.statusResolve = null;
       return;
     }
-    let body: Blob | undefined;
+    let body: ArrayBuffer | undefined;
     if (meta.hasBody) {
       this.bypassNextMessage = true;
-      body = await new Promise<Blob>((resolve) => {
+      const bodyBlob = await new Promise<Blob>((resolve) => {
         this.ws.addEventListener('message', (bodyEvent) => {
           if (!(bodyEvent.data instanceof Blob)) {
             throw new TypeError(`Expecting blob request body, received: ${String(bodyEvent.data)}`);
@@ -128,6 +128,7 @@ export default class WSClient {
           resolve(bodyEvent.data);
         }, { once: true });
       });
+      body = await bodyBlob.arrayBuffer();
     }
     const request = new RouteRequest(meta, body ?? null);
     const route = new Route(this.ws, meta.id, request);

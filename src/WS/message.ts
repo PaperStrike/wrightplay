@@ -8,6 +8,7 @@ export interface RouteRequestMeta extends RouteMetaBase {
   headersArray: { name: string, value: string }[];
   isNavigationRequest: boolean;
   method: string;
+  resourceType: string;
   url: string;
 }
 

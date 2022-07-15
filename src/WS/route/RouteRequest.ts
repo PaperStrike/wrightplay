@@ -4,7 +4,7 @@ import { FallbackOverrides } from './Route.js';
 export default class RouteRequest {
   constructor(
     readonly requestMeta: RouteRequestMeta,
-    readonly requestBody: Blob | null,
+    readonly requestBody: ArrayBuffer | null,
   ) {}
 
   private fallbackOverrides: FallbackOverrides = {};
@@ -39,6 +39,10 @@ export default class RouteRequest {
     return this.cachedAllHeaders;
   }
 
+  headerValue(name: string) {
+    return this.allHeaders()[name.toLowerCase()];
+  }
+
   headersArray() {
     if (this.fallbackOverrides.headers) {
       return Object.entries(this.fallbackOverrides.headers)
@@ -56,14 +60,55 @@ export default class RouteRequest {
     return this.fallbackOverrides.method ?? this.requestMeta.method;
   }
 
-  postDataBlob() {
-    const { postData } = this.fallbackOverrides;
-    if (postData !== undefined) {
-      if (postData === null) return postData;
-      return new Blob([postData]);
+  postData(): string | null {
+    const fallbackPostData = this.fallbackOverrides.postData;
+    if (fallbackPostData) {
+      if (typeof fallbackPostData === 'string') return fallbackPostData;
+      return new TextDecoder().decode(fallbackPostData);
+    }
+
+    return this.requestBody ? new TextDecoder().decode(this.requestBody) : null;
+  }
+
+  // eslint-disable-next-line @typescript-eslint/ban-types
+  postDataJSON(): Object | null {
+    const postData = this.postData();
+    if (!postData) return null;
+
+    const contentType = this.headerValue('content-type');
+    if (contentType === 'application/x-www-form-urlencoded') {
+      return [...new URLSearchParams(postData)]
+        .reduce((acc: Record<string, string>, [key, value]) => {
+          acc[key] = value;
+          return acc;
+        }, {});
+    }
+
+    try {
+      // eslint-disable-next-line @typescript-eslint/ban-types
+      return JSON.parse(postData) as Object | null;
+    } catch {
+      throw new Error(`POST data is not a valid JSON object: ${postData}`);
+    }
+  }
+
+  postDataArrayBuffer(): ArrayBuffer | null {
+    const fallbackPostData = this.fallbackOverrides.postData;
+    if (fallbackPostData) {
+      if (typeof fallbackPostData === 'string') {
+        return new TextEncoder().encode(fallbackPostData).buffer;
+      }
+      if (ArrayBuffer.isView(fallbackPostData)) {
+        return fallbackPostData.buffer;
+      }
+      return fallbackPostData;
     }
 
     return this.requestBody;
+  }
+
+  resourceType() {
+    return this.requestMeta.resourceType;
   }
 
   url() {
