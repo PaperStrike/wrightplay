@@ -192,6 +192,7 @@ export default class WSServer {
         headersArray,
         isNavigationRequest: request.isNavigationRequest(),
         method: request.method(),
+        resourceType: request.resourceType(),
         url: request.url(),
       }));
       if (hasBody) {

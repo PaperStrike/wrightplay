@@ -7,7 +7,7 @@ export type FallbackOverrides = {
   url?: string;
   method?: string;
   headers?: Record<string, string>;
-  postData?: string | ArrayBufferLike | Blob | ArrayBufferView | null;
+  postData?: string | ArrayBuffer | ArrayBufferView;
 };
 
 export default class Route {
