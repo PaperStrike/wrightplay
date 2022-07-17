@@ -35,21 +35,11 @@ type HandleClientMetaInit<T> = {
 };
 
 export default class NodeHandle<T = unknown> extends Handle {
-  wsReady: Promise<void>;
-
   constructor(
-    /**
-     * @internal
-     */
     id: number,
     private readonly ws: WebSocket,
   ) {
     super(id);
-    this.wsReady = ws.readyState === ws.OPEN
-      ? Promise.resolve()
-      : new Promise((resolve) => {
-        ws.addEventListener('open', () => resolve());
-      });
   }
 
   private resolveID = 0;
@@ -58,30 +48,34 @@ export default class NodeHandle<T = unknown> extends Handle {
     init: HandleClientMetaInit<HandleClientMeta>,
     convertResult: (result: unknown) => R,
   ): Promise<R> {
-    const { id, resolveID } = this;
+    const { ws, id, resolveID } = this;
     this.resolveID += 1;
-    await this.wsReady;
-    this.ws.send(createHandleMeta({
+    if (ws.readyState === ws.CONNECTING) {
+      await new Promise((resolve) => {
+        ws.addEventListener('open', resolve);
+      });
+    }
+    ws.send(createHandleMeta({
       id,
       resolveID,
       ...init,
     }));
     return new Promise<R>((resolve, reject) => {
-      const onMessage = ({ data }: MessageEvent) => {
+      const controller = new AbortController();
+      ws.addEventListener('message', ({ data }) => {
         if (typeof data !== 'string') return;
         const meta = parseServerMeta(data);
         if (meta.type !== 'handle'
           || meta.id !== id
           || meta.resolveID !== resolveID) return;
-        this.ws.removeEventListener('message', onMessage);
+        controller.abort();
         const result = parseSerializedValue(JSON.parse(meta.result) as SerializedValue);
         if (meta.error) {
           reject(result);
         } else {
           resolve(convertResult(result));
         }
-      };
-      this.ws.addEventListener('message', onMessage);
+      }, { signal: controller.signal });
     });
   }
 
