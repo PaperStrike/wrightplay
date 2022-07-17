@@ -3,8 +3,8 @@ import { FallbackOverrides } from './Route.js';
 
 export default class RouteRequest {
   constructor(
-    readonly requestMeta: RouteRequestMeta,
-    readonly requestBody: ArrayBuffer | null,
+    private readonly requestMeta: RouteRequestMeta,
+    private readonly requestBody: ArrayBuffer | null,
   ) {}
 
   private fallbackOverrides: FallbackOverrides = {};
