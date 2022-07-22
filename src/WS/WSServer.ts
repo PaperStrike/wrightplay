@@ -186,13 +186,22 @@ export default class WSServer {
       }
       const bodyBuffer = request.postDataBuffer();
       const hasBody = bodyBuffer !== null;
+      let frame: number | null;
+      try {
+        frame = this.createHandleID(request.frame());
+      } catch {
+        frame = null;
+      }
+      const sw = request.serviceWorker();
       client.send(createRouteMeta({
         id: this.routeList.length,
         hasBody,
+        frame,
         headersArray,
         isNavigationRequest: request.isNavigationRequest(),
         method: request.method(),
         resourceType: request.resourceType(),
+        serviceWorker: sw ? this.createHandleID(sw) : null,
         url: request.url(),
       }));
       if (hasBody) {
@@ -261,6 +270,12 @@ export default class WSServer {
         error = true;
         result = e instanceof Error ? e : String(e);
       }
+    }
+    if (resolveID === null) {
+      if (error) {
+        throw result;
+      }
+      return;
     }
     source.send(createHandleMeta({
       action: 'resolve',
