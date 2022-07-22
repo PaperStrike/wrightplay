@@ -5,10 +5,13 @@ export interface RouteMetaBase {
 export interface RouteRequestMeta extends RouteMetaBase {
   id: number;
   hasBody: boolean;
+
+  frame: number | null;
   headersArray: { name: string, value: string }[];
   isNavigationRequest: boolean;
   method: string;
   resourceType: string;
+  serviceWorker: number | null;
   url: string;
 }
 

@@ -53,6 +53,16 @@ const finalizationRegistry = new FinalizationRegistry(({ id, ws }: {
 });
 
 export default class NodeHandle<T = unknown> extends Handle {
+  /**
+   * Share the handle ID with an object so that the matching handles will keep referencing the node
+   * target until all ID users are disposed or garbage-collected.
+   * @internal
+   */
+  static share(id: number, ws: WebSocket, withObj: object) {
+    idReferenceCounts[id] = (idReferenceCounts[id] ?? 0) + 1;
+    finalizationRegistry.register(withObj, { id, ws });
+  }
+
   constructor(
     id: number,
     private readonly ws: WebSocket,

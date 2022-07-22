@@ -130,7 +130,7 @@ export default class WSClient {
       });
       body = await bodyBlob.arrayBuffer();
     }
-    const request = new RouteRequest(meta, body ?? null);
+    const request = new RouteRequest(meta, body ?? null, this.ws);
     const route = new Route(this.ws, meta.id, request);
     const requestURL = new URL(meta.url, window.location.origin);
     const handlers = this.routes.filter((r) => r.matches(requestURL));
