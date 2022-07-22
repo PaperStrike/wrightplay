@@ -55,7 +55,7 @@ export interface RouteToggleMeta extends RouteMetaBase {
 export interface HandleMetaBase {
   type: 'handle';
   id: number;
-  resolveID: number;
+  resolveID: number | null;
 }
 
 export interface HandleEvaluateMeta extends HandleMetaBase {

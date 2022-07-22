@@ -34,12 +34,33 @@ type HandleClientMetaInit<T> = {
   [K in keyof T as K extends keyof HandleMetaBase ? never : K]: T[K];
 };
 
+const idReferenceCounts: number[] = [];
+const finalizationRegistry = new FinalizationRegistry(({ id, ws }: {
+  id: number;
+  ws: WebSocket;
+}) => {
+  if (idReferenceCounts[id] > 1) {
+    idReferenceCounts[id] -= 1;
+    return;
+  }
+  delete idReferenceCounts[id];
+  if (ws.readyState !== ws.OPEN) return;
+  ws.send(createHandleMeta({
+    id,
+    resolveID: null,
+    action: 'dispose',
+  }));
+});
+
 export default class NodeHandle<T = unknown> extends Handle {
   constructor(
     id: number,
     private readonly ws: WebSocket,
   ) {
     super(id);
+
+    idReferenceCounts[id] = (idReferenceCounts[id] ?? 0) + 1;
+    finalizationRegistry.register(this, { id, ws }, this);
   }
 
   private resolveID = 0;
@@ -133,9 +154,16 @@ export default class NodeHandle<T = unknown> extends Handle {
 
   async dispose(): Promise<void> {
     if (this.disposed) return;
-    await this.act({
-      action: 'dispose',
-    }, () => {});
+    const { id } = this;
+    if (idReferenceCounts[id] > 1) {
+      idReferenceCounts[id] -= 1;
+    } else {
+      await this.act({
+        action: 'dispose',
+      }, () => {});
+      delete idReferenceCounts[id];
+    }
+    finalizationRegistry.unregister(this);
     this.disposed = true;
   }
 
