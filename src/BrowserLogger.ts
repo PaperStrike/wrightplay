@@ -1,7 +1,7 @@
 import path from 'path';
 import util from 'util';
 import { pathToFileURL } from 'url';
-import { SourceMap, SourceMapPayload } from 'module';
+import { SourceMap, SourceMapPayload, SourceMapping } from 'module';
 
 import chalk from 'chalk';
 import type { ConsoleMessage } from 'playwright-core';
@@ -101,8 +101,9 @@ export default class BrowserLogger {
   readonly originalStackBase: URL | string;
 
   /**
-   * The regex for trace matching.
-   * For instance, `/(http:\/\/127.0.0.1:8001\/.+|(?<= \().+):(\d+):(\d+)/g`.
+   * The regex for trace matching,
+   * with the following parenthesized capture groups:
+   * name, source, line, column
    */
   readonly stackTraceRegex: RegExp;
 
@@ -124,7 +125,7 @@ export default class BrowserLogger {
     const baseDir = new URL('./', originalStackBase).href;
 
     // `(?<= \().+`: Mocha (and/or other tools) may change the stack and omit the base path
-    this.stackTraceRegex = new RegExp(`(${baseDir}.+|(?<= \\().+):(\\d+):(\\d+)`, 'g');
+    this.stackTraceRegex = new RegExp(`(?:${browserType === 'chromium' ? ' {4}at (\\S+) \\(' : '(\\S+)@'})?(${baseDir}.+|(?<= \\().+):(\\d+):(\\d+)`, 'g');
   }
 
   /**
@@ -144,7 +145,13 @@ export default class BrowserLogger {
       sourceMapCache,
     } = this;
 
-    return text.replace(stackTraceRegex, (original, url: string, line: string, column: string) => {
+    return text.replace(stackTraceRegex, (
+      original,
+      name: string,
+      url: string,
+      line: string,
+      column: string,
+    ) => {
       // Get the latest built content.
       let pathname;
       try {
@@ -172,12 +179,24 @@ export default class BrowserLogger {
         originalSource,
         originalLine,
         originalColumn,
-      } = sourceMap.findEntry(+line - 1, +column - 1);
+        name: originalName,
+      } = sourceMap.findEntry(+line - 1, +column - 1) as SourceMapping & {
+        /**
+         * @since v14.17.1, v15.4.0
+         */
+        name: string | undefined;
+      };
 
       // The type of `findEntry` is loose. It may return {}.
-      return originalSource !== undefined
-        ? `${pathToFileURL(path.resolve(cwd, originalSource)).href}:${originalLine + 1}:${originalColumn + 1}`
-        : original;
+      if (originalSource === undefined) return original;
+
+      const originalStack = `${pathToFileURL(path.resolve(cwd, originalSource)).href}:${originalLine + 1}:${originalColumn + 1}`;
+      if (name) {
+        return this.browserType === 'chromium'
+          ? `    at ${originalName || name} (${originalStack}`
+          : `${originalName || name}@${originalStack}`;
+      }
+      return originalStack;
     });
   }
 

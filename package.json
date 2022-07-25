@@ -66,7 +66,7 @@
   "dependencies": {
     "chalk": "^5.0.1",
     "commander": "^9.4.0",
-    "esbuild": "~0.14.49",
+    "esbuild": "~0.14.50",
     "get-port": "^6.1.2",
     "globby": "^13.1.2",
     "lilconfig": "^2.0.6",
