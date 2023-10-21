@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
 import { createRequire } from 'node:module';
-import { Command } from 'commander';
-import Runner, { BrowserTypeName, BrowserServerOptions, RunnerOptions } from './Runner.js';
+import { Command, Option } from '@commander-js/extra-typings';
+import Runner, { BrowserServerOptions, RunnerOptions } from './Runner.js';
 import { ConfigOptions } from './node.js';
 import configSearcher from './configSearcher.js';
 
@@ -12,35 +12,26 @@ const pkgJSON = require('../package.json') as {
   version: string;
 };
 
-const parseJSON = (str: string) => JSON.parse(str) as unknown;
+// Simple JSON.parse. Error by Playwright if any.
+const parseBrowserServerOptions = (str: string) => JSON.parse(str) as BrowserServerOptions;
 
-export const program = new Command();
-
-program
+export const program = new Command()
   .version(pkgJSON.version)
-  .name(pkgJSON.name);
-
-program
+  .name(pkgJSON.name)
   .argument('[test-or-entry...]', 'Test files and entry points. Use glob for tests, name=path for entries')
-  .option('--cwd <dir>', 'Current working directory. Defaults to `process.cwd()`')
-  .option('--config <file>', 'Path to config file. Defaults to auto, see docs full config file search places')
-  .option('-s, --setup <file>', 'File to run before the test files')
-  .option('--build-max-age <seconds>', 'Number of seconds the test build remains fresh after the test is built. Defaults to 2', Number)
-  .option('-b, --browser <browser>', 'Type of the browser. One of: "chromium", "firefox", "webkit". Defaults to "chromium"')
-  .option('--browser-server-options <json>', 'Options used to launch the test browser server. Defaults to the Playwright defaults', parseJSON)
-  .option('-d, --debug', 'Run browser in headed mode. Defaults to `false`')
-  .option('--no-cov', 'Disable coverage file output. This only matters when `NODE_V8_COVERAGE` is set. Defaults to `false` on chromium, `true` on firefox and webkit');
+  .addOption(new Option('--cwd <dir>', 'Current working directory. Defaults to `process.cwd()`'))
+  .addOption(new Option('--config <file>', 'Path to config file. Defaults to auto, see docs full config file search places'))
+  .addOption(new Option('-s, --setup <file>', 'File to run before the test files'))
+  .addOption(new Option('--build-max-age <seconds>', 'Number of seconds the test build remains fresh after the test is built. Defaults to 2')
+    .argParser(Number))
+  .addOption(new Option('-b, --browser <browser>', 'Type of the browser. One of: "chromium", "firefox", "webkit". Defaults to "chromium"')
+    .choices(['chromium', 'firefox', 'webkit'] as const))
+  .addOption(new Option('--browser-server-options <json>', 'Options used to launch the test browser server. Defaults to the Playwright defaults')
+    .argParser(parseBrowserServerOptions))
+  .addOption(new Option('-d, --debug', 'Run browser in headed mode. Defaults to `false`'))
+  .addOption(new Option('--no-cov', 'Disable coverage file output. This only matters when `NODE_V8_COVERAGE` is set. Defaults to `false` on chromium, `true` on firefox and webkit'));
 
-export interface CLIOptions {
-  cwd?: string;
-  config?: string;
-  setup?: string;
-  buildMaxAge?: number;
-  browser?: BrowserTypeName; // not enforced. error by Playwright if any.
-  browserServerOptions?: BrowserServerOptions; // not enforced, too.
-  debug?: boolean;
-  cov: boolean; // required member according to `commander`
-}
+export type CLIOptions = ReturnType<typeof program.opts>;
 
 export const parseRunnerOptionsFromCLI = async (
   testAndEntries: string[],
