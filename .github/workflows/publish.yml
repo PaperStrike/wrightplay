@@ -13,7 +13,7 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           cache: 'npm'
-          node-version: '14'
+          node-version: '18'
           registry-url: https://registry.npmjs.org/
       - run: npm ci
       - run: npm version ${{ github.ref_name }} --no-git-tag-version

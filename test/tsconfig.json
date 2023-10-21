@@ -4,10 +4,6 @@
     "allowJs": true,
     "checkJs": true,
     "noEmit": true,
-    "paths": {
-      // these don't support TS 4.7 Node16+ resolution yet
-      "zora": ["./node_modules/zora/dist/zora.d.ts"]
-    },
     "rootDir": "../",
     "target": "ESNext"
   },
