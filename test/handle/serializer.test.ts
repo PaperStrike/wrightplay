@@ -103,9 +103,9 @@ describe('serializer', () => {
     expect(parsed.message).toBe('the outer error');
     expect(parsed.stack).toBe(error.stack);
     expect(parsed.cause).toBeInstanceOf(Error);
-    expect(parsed.cause?.name).toBe('TypeError');
-    expect(parsed.cause?.message).toBe('the inner cause');
-    expect(parsed.cause?.stack).toBe(cause.stack);
+    expect((parsed.cause as Error).name).toBe('TypeError');
+    expect((parsed.cause as Error).message).toBe('the inner cause');
+    expect((parsed.cause as Error).stack).toBe(cause.stack);
   });
 
   it('should properly serialize array and object', () => {

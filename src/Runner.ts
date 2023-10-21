@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 import type { AddressInfo } from 'node:net';
 import type { SourceMapPayload } from 'node:module';
 
-import playwright from 'playwright-core';
+import playwright from 'playwright';
 import { globby } from 'globby';
 import { lookup as mimeLookup } from 'mrmime';
 import getPort, { portNumbers } from 'get-port';
