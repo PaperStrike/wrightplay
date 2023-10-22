@@ -4,12 +4,7 @@ import {
   HandleMetaBase,
   HandleClientMeta,
 } from '../message.js';
-import Handle from './Handle.js';
-import {
-  serializeValue,
-  parseSerializedValue,
-  SerializedValue,
-} from './serializer.js';
+import * as Serializer from '../../serializer/index.js';
 
 export type Unboxed<Arg> =
   Arg extends URL
@@ -52,7 +47,7 @@ const finalizationRegistry = new FinalizationRegistry(({ id, ws }: {
   }));
 });
 
-export default class NodeHandle<T = unknown> extends Handle {
+export default class NodeHandle<T = unknown> extends Serializer.Handle {
   /**
    * Share the handle ID with an object so that the matching handles will keep referencing the node
    * target until all ID users are disposed or garbage-collected.
@@ -100,7 +95,9 @@ export default class NodeHandle<T = unknown> extends Handle {
           || meta.id !== id
           || meta.resolveID !== resolveID) return;
         controller.abort();
-        const result = parseSerializedValue(JSON.parse(meta.result) as SerializedValue);
+        const result = Serializer.parseSerializedValue(
+          JSON.parse(meta.result) as Serializer.SerializedValue,
+        );
         if (meta.error) {
           reject(result);
         } else {
@@ -128,7 +125,7 @@ export default class NodeHandle<T = unknown> extends Handle {
     return this.act({
       action: 'evaluate',
       fn: String(nodeFunction),
-      arg: JSON.stringify(serializeValue(arg)),
+      arg: JSON.stringify(Serializer.serializeValue(arg)),
       h: createHandle,
     }, (result) => {
       if (createHandle) return new NodeHandle(result as number, this.ws);
