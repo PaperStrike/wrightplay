@@ -332,15 +332,14 @@ const worker = new Worker('/worker.js');
 // ...
 ```
 
-### buildMaxAge
+### watch
 
 ```shell
-wrightplay --build-max-age <seconds>
+wrightplay -w
+wrightplay --watch
 ```
 
-Number of seconds the test build remains fresh after the test is built. Defaults to 2.
-
-This means you can start wrightplay, make some changes to your code, refresh the browser, then get the latest test results without a restart, as long as the refresh happens more than `buildMaxAge` seconds later than the beginning. You may need [`headless`](#headless) or [`debug`](#debug) options to click the refresh button.
+Watch the setup and test files for changes and automatically rerun the tests. Defaults to `false`.
 
 ### browser
 

@@ -1,6 +1,6 @@
 import type http from 'node:http';
 import WebSocket, { WebSocketServer } from 'ws';
-import type playwright from 'playwright-core';
+import type playwright from 'playwright';
 import {
   parseEvaluateExpression,
   parseSerializedValue,
