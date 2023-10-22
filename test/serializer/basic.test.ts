@@ -1,12 +1,12 @@
 import { describe, expect, it } from '../default.setup.js';
-import Handle from '../../src/WS/handle/Handle.js';
+import Handle from '../../src/serializer/Handle.js';
 import {
-  noFallback,
-  serializeValue,
-  parseSerializedValue,
   SerializableValue,
   SerializedValue,
-} from '../../src/WS/handle/serializer.js';
+  serializeValue,
+  noFallback,
+  parseSerializedValue,
+} from '../../src/serializer/index.js';
 
 describe('serializer', () => {
   function parse<T extends SerializableValue>(

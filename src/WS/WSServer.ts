@@ -1,12 +1,7 @@
 import type http from 'node:http';
 import WebSocket, { WebSocketServer } from 'ws';
 import type playwright from 'playwright';
-import {
-  parseEvaluateExpression,
-  parseSerializedValue,
-  serializeValue,
-  SerializedValue,
-} from './handle/serializer.js';
+import * as Serializer from '../serializer/index.js';
 import {
   RouteClientMeta,
   HandleClientMeta,
@@ -235,9 +230,9 @@ export default class WSServer {
       try {
         switch (meta.action) {
           case 'evaluate': {
-            const fn = parseEvaluateExpression(meta.fn);
-            const arg = parseSerializedValue(
-              JSON.parse(meta.arg) as SerializedValue,
+            const fn = Serializer.parseEvaluateExpression(meta.fn);
+            const arg = Serializer.parseSerializedValue(
+              JSON.parse(meta.arg) as Serializer.SerializedValue,
               this.handleTargets,
             );
             const returned: unknown = await (typeof fn === 'function' ? fn(target, arg) : fn);
@@ -281,7 +276,7 @@ export default class WSServer {
       action: 'resolve',
       id,
       resolveID,
-      result: JSON.stringify(serializeValue(result, null)),
+      result: JSON.stringify(Serializer.serializeValue(result, null)),
       error,
     }));
   }
