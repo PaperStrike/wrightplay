@@ -256,7 +256,7 @@ Path to config file. The CLI checks these files by default:
 
 ```ts
 [
-  'package.json',
+  'package.json', // "wrightplay" property
   '.wrightplayrc',
   '.wrightplayrc.json',
   '.wrightplayrc.ts',
@@ -265,6 +265,14 @@ Path to config file. The CLI checks these files by default:
   '.wrightplayrc.js',
   '.wrightplayrc.mjs',
   '.wrightplayrc.cjs',
+  '.config/wrightplayrc',
+  '.config/wrightplayrc.json',
+  '.config/wrightplayrc.ts',
+  '.config/wrightplayrc.mts',
+  '.config/wrightplayrc.cts',
+  '.config/wrightplayrc.js',
+  '.config/wrightplayrc.mjs',
+  '.config/wrightplayrc.cjs',
   'wrightplay.config.ts',
   'wrightplay.config.mts',
   'wrightplay.config.cts',
@@ -273,16 +281,6 @@ Path to config file. The CLI checks these files by default:
   'wrightplay.config.cjs',
 ]
 ```
-
-#### TypeScript Config File Notice
-
-Although the CLI checks TypeScript config files, it doesn't handle the load process differently. In most cases, using TypeScript config file will result in an `ERR_UNKNOWN_FILE_EXTENSION` error. However, you can use a custom [Node.js module loader](https://nodejs.org/api/cli.html#--experimental-loadermodule) to parse them properly:
-
-```shell
-cross-env NODE_OPTIONS="--loader ts-node/esm" wrightplay
-```
-
-Loader is not required for TypeScript [test files](#tests) and [entry points](#entrypoints). It is only required for TypeScript config files.
 
 ### setup
 
