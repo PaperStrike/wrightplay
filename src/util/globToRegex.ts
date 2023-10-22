@@ -18,7 +18,7 @@ export default function globToRegex(glob: string): RegExp {
     switch (c) {
       case '\\': {
         i += 1;
-        const char = i === glob.length ? c : glob[i + 1];
+        const char = i === glob.length ? c : glob[i];
         tokens.push(syntaxChars.has(char) ? `\\${char}` : char);
         break;
       }
