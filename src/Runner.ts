@@ -1,6 +1,7 @@
 import http from 'node:http';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
+import { EventEmitter } from 'node:events';
 import { fileURLToPath } from 'node:url';
 import type { AddressInfo } from 'node:net';
 import type { SourceMapPayload } from 'node:module';
@@ -44,9 +45,10 @@ export interface RunnerOptions {
   entryPoints?: Record<string, string>;
 
   /**
-   * Number of seconds the test build remains fresh after the test is built. Defaults to 2.
+   * Watch the setup and test files for changes and rerun the tests automatically.
+   * Defaults to `false`.
    */
-  buildMaxAge?: number;
+  watch?: boolean;
 
   /**
    * Type of the browser. One of: "chromium", "firefox", "webkit". Defaults to "chromium".
@@ -104,9 +106,9 @@ export default class Runner {
   readonly entryPoints: Record<string, string>;
 
   /**
-   * Number of seconds the test build remains fresh after the test is built.
+   * Watch the setup and test files for changes and automatically rerun the tests.
    */
-  readonly buildMaxAge: number;
+  readonly watch: boolean;
 
   /**
    * Type of the browser. One of: "chromium", "firefox", "webkit".
@@ -141,7 +143,7 @@ export default class Runner {
     setup,
     tests,
     entryPoints = {},
-    buildMaxAge = 2,
+    watch = false,
     browser = 'chromium',
     browserServerOptions = {},
     headless = browserServerOptions.headless ?? !browserServerOptions.devtools,
@@ -149,7 +151,7 @@ export default class Runner {
   }: RunnerOptions) {
     this.setupFile = setup;
     this.entryPoints = entryPoints;
-    this.buildMaxAge = buildMaxAge;
+    this.watch = watch;
     this.browserType = browser;
     this.browserServerOptions = browserServerOptions;
     this.headless = headless;
@@ -216,7 +218,7 @@ export default class Runner {
       setupFile,
       testFiles,
       entryPoints,
-      buildMaxAge,
+      watch,
       fileContents,
       staticRequestListener,
     } = this;
@@ -227,15 +229,9 @@ export default class Runner {
       throw new Error('No test file found');
     }
 
-    type BuildResult = Omit<esbuild.BuildResult, 'rebuild'> & {
-      outputFiles: esbuild.OutputFile[];
-      rebuild: Pick<esbuild.BuildInvalidate, keyof esbuild.BuildInvalidate> & {
-        (): Promise<BuildResult>;
-      };
-    };
-    let buildDate = 0;
     let building = true;
-    let build = esbuild.build({
+    const buildEventEmitter = new EventEmitter();
+    const buildContext = await esbuild.context({
       stdin: {
         contents: `${importFiles.map((file) => `import '${file}'`).join('\n')}
 window.dispatchEvent(new CustomEvent('__wrightplay_${this.uuid}_init__'))`,
@@ -251,29 +247,32 @@ window.dispatchEvent(new CustomEvent('__wrightplay_${this.uuid}_init__'))`,
       plugins: [{
         name: 'built files updater',
         setup: (pluginBuild) => {
+          let count = 0;
+          pluginBuild.onStart(() => {
+            building = true;
+          });
           pluginBuild.onEnd((result) => {
             this.updateBuiltFiles(result.outputFiles ?? []);
-            buildDate = Date.now();
+            count += 1;
             building = false;
+            buildEventEmitter.emit('end', count);
           });
         },
       }],
       write: false,
-      incremental: true,
-    })
-      // eslint-disable-next-line no-console
-      .catch(console.error) as Promise<BuildResult | void>;
+    });
+
+    if (watch) {
+      await buildContext.watch();
+    } else {
+      await buildContext.rebuild();
+    }
 
     const esbuildListener: http.RequestListener = (request, response) => {
       const { url } = request as typeof request & { url: string };
       const pathname = url.split(/[?#]/, 1)[0];
 
-      if (!building && Date.now() - buildDate > buildMaxAge * 1000) {
-        building = true;
-        build = build.then((result) => result?.rebuild());
-      }
-
-      build.then(() => {
+      const handleRequest = () => {
         const builtContent = fileContents.get(pathname);
         if (!builtContent) {
           staticRequestListener(request, response);
@@ -285,17 +284,27 @@ window.dispatchEvent(new CustomEvent('__wrightplay_${this.uuid}_init__'))`,
           'Content-Type': `${mimeType}; charset=utf-8`,
         });
         response.end(builtContent);
-      })
-        // eslint-disable-next-line no-console
-        .catch(console.error);
+      };
+
+      if (building) {
+        buildEventEmitter.once('end', handleRequest);
+      } else {
+        handleRequest();
+      }
     };
 
     const server = http.createServer(esbuildListener) as FileServer;
     server.on('close', () => {
-      build
-        .then((result) => result?.rebuild.dispose())
+      buildContext.dispose()
         // eslint-disable-next-line no-console
         .catch(console.error);
+    });
+
+    // Forward rebuild end event.
+    buildEventEmitter.on('end', (count: number) => {
+      // Bypass the first build.
+      if (count === 1) return;
+      server.emit('wrightplay:rebuilt');
     });
 
     // This is helpful if one day esbuild Incremental API supports
@@ -417,6 +426,14 @@ window.dispatchEvent(new CustomEvent('__wrightplay_${this.uuid}_init__'))`,
 
     await page.goto('/');
 
+    // Rerun the tests on file changes.
+    fileServer.on('wrightplay:rebuilt', () => {
+      page.reload().catch(() => {
+        // eslint-disable-next-line no-console
+        console.error('Failed to rerun the tests after file changes');
+      });
+    });
+
     // Record coverage if required.
     // Only support chromium atm.
     const recordingCoverage = this.reportCoverageDir
@@ -455,7 +472,7 @@ window.dispatchEvent(new CustomEvent('__wrightplay_${this.uuid}_init__'))`,
       await coverageReporter.save(this.reportCoverageDir as string);
     }
 
-    if (this.headless) {
+    if (!this.watch && this.headless) {
       page.off('console', bLog.forwardConsole);
       page.off('pageerror', bLog.forwardError);
       await bLog.lastPrint;

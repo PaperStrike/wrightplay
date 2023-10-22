@@ -1,4 +1,4 @@
-import type playwright from 'playwright-core';
+import type playwright from 'playwright';
 import {
   createRouteMeta,
   parseServerMeta,
