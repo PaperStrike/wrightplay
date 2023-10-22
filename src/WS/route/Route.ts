@@ -115,6 +115,7 @@ export default class Route {
     body,
     contentType,
     headers,
+    json,
     path,
     response,
     status,
@@ -122,25 +123,42 @@ export default class Route {
     body?: string | ArrayBufferLike | Blob | ArrayBufferView | null;
     contentType?: string;
     headers?: Record<string, string>;
+    json?: unknown;
     path?: string;
     response?: Response;
     status?: number;
   } = {}) {
     this.assertNotHandled();
-    let fulfillBody = body;
+
+    let fulfillBody;
+    if (json !== undefined) {
+      if (body !== undefined) {
+        throw new Error('Can specify either body or json parameters');
+      }
+      fulfillBody = JSON.stringify(fulfillBody);
+    } else {
+      fulfillBody = body;
+    }
+
     if (fulfillBody === undefined) {
       const responseAB = await response?.clone().arrayBuffer();
       if (responseAB && responseAB.byteLength > 0) {
         fulfillBody = responseAB;
       }
     }
+
+    let fulfillContentType = contentType;
+    if (fulfillContentType === undefined && json !== undefined) {
+      fulfillContentType = 'application/json';
+    }
+
     const hasBody = fulfillBody !== undefined && fulfillBody !== null;
     this.ws.send(createRouteMeta({
       action: 'fulfill',
       id: this.id,
       resolveID: this.resolveID,
       hasBody,
-      contentType: contentType ?? response?.headers.get('Content-Type') ?? undefined,
+      contentType: fulfillContentType,
       headers: headers ?? (
         response && [...response.headers]
           .reduce((acc: Record<string, string>, [key, value]) => {

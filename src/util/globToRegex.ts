@@ -1,25 +1,27 @@
 /**
- * @see [globToRegex, playwright/netUtils.ts]{@link https://github.com/microsoft/playwright/blob/76abb3a5be7cab43e97c49bac099d6eb7da9ef98/packages/playwright-core/src/common/netUtils.ts#L139}
+ * Set of syntax characters used in regular expressions.
+ *
+ * [SyntaxCharacter, RegExp Patterns - ECMAScript Specification](https://tc39.es/ecma262/multipage/text-processing.html#prod-SyntaxCharacter)
+ */
+const syntaxChars = new Set(['^', '$', '\\', '.', '*', '+', '?', '(', ')', '[', ']', '{', '}', '|']);
+
+/**
+ * Functionally equivalent to Playwright's `globToRegex` function.
+ *
+ * [globToRegex, playwright/glob.ts - GitHub](https://github.com/microsoft/playwright/blob/d1d5fc67dc684a5d4b682749e59bba8cc0ad14de/packages/playwright-core/src/utils/glob.ts)
  */
 export default function globToRegex(glob: string): RegExp {
   const tokens = ['^'];
-  let inGroup;
+  let inGroup = false;
   for (let i = 0; i < glob.length; i += 1) {
     const c = glob[i];
     switch (c) {
-      // escape-chars
-      case '/':
-      case '$':
-      case '^':
-      case '+':
-      case '.':
-      case '(':
-      case ')':
-      case '=':
-      case '!':
-      case '|':
-        tokens.push(`\\${c}`);
+      case '\\': {
+        i += 1;
+        const char = i === glob.length ? c : glob[i];
+        tokens.push(syntaxChars.has(char) ? `\\${char}` : char);
         break;
+      }
       case '*': {
         const beforeDeep = glob[i - 1];
         let starCount = 1;
@@ -42,6 +44,10 @@ export default function globToRegex(glob: string): RegExp {
       case '?':
         tokens.push('.');
         break;
+      case '[':
+      case ']':
+        tokens.push(c);
+        break;
       case '{':
         inGroup = true;
         tokens.push('(');
@@ -58,7 +64,7 @@ export default function globToRegex(glob: string): RegExp {
         tokens.push(`\\${c}`);
         break;
       default:
-        tokens.push(c);
+        tokens.push(syntaxChars.has(c) ? `\\${c}` : c);
     }
   }
   tokens.push('$');
