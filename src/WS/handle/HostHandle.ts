@@ -15,7 +15,7 @@ export type Unboxed<Arg> =
         ? RegExp
         : Arg extends Error
           ? Error
-          : Arg extends NodeHandle<infer T>
+          : Arg extends HostHandle<infer T>
             ? T
             : Arg extends [infer A0, ...infer Rest]
               ? [Unboxed<A0>, ...Unboxed<Rest>]
@@ -47,7 +47,7 @@ const finalizationRegistry = new FinalizationRegistry(({ id, ws }: {
   }));
 });
 
-export default class NodeHandle<T = unknown> extends Serializer.Handle {
+export default class HostHandle<T = unknown> extends Serializer.Handle {
   /**
    * Share the handle ID with an object so that the matching handles will keep referencing the node
    * target until all ID users are disposed or garbage-collected.
@@ -116,19 +116,19 @@ export default class NodeHandle<T = unknown> extends Serializer.Handle {
     nodeFunction: NodeFunctionOn<O, Arg, R>,
     arg: Arg,
     createHandle: true,
-  ): Promise<NodeHandle<R>>;
+  ): Promise<HostHandle<R>>;
   private async innerEvaluate<R, Arg, O>(
     nodeFunction: NodeFunctionOn<O, Arg, R>,
     arg: Arg,
     createHandle: boolean,
-  ): Promise<R | NodeHandle<R>> {
+  ): Promise<R | HostHandle<R>> {
     return this.act({
       action: 'evaluate',
       fn: String(nodeFunction),
       arg: JSON.stringify(Serializer.serializeValue(arg)),
       h: createHandle,
     }, (result) => {
-      if (createHandle) return new NodeHandle(result as number, this.ws);
+      if (createHandle) return new HostHandle(result as number, this.ws);
       return result as R;
     });
   }
@@ -142,11 +142,11 @@ export default class NodeHandle<T = unknown> extends Serializer.Handle {
   evaluateHandle<R, Arg, O extends T = T>(
     nodeFunction: NodeFunctionOn<O, Arg, R>,
     arg: Arg,
-  ): Promise<NodeHandle<R>>;
+  ): Promise<HostHandle<R>>;
   evaluateHandle<R, O extends T = T>(
     nodeFunction: NodeFunctionOn<O, void, R>,
     arg?: unknown,
-  ): Promise<NodeHandle<R>>;
+  ): Promise<HostHandle<R>>;
   async evaluateHandle<R, Arg, O>(nodeFunction: NodeFunctionOn<O, Arg, R>, arg: Arg) {
     return this.innerEvaluate(nodeFunction, arg, true);
   }
@@ -174,22 +174,22 @@ export default class NodeHandle<T = unknown> extends Serializer.Handle {
     this.disposed = true;
   }
 
-  async getProperties(): Promise<Map<string, NodeHandle>> {
+  async getProperties(): Promise<Map<string, HostHandle>> {
     return this.act({
       action: 'get-properties',
     }, (result) => {
-      const propertiesMap: Map<string, NodeHandle> = new Map();
+      const propertiesMap: Map<string, HostHandle> = new Map();
       (result as [string, number][]).forEach(([name, handleID]) => {
-        propertiesMap.set(name, new NodeHandle(handleID, this.ws));
+        propertiesMap.set(name, new HostHandle(handleID, this.ws));
       });
       return propertiesMap;
     });
   }
 
-  async getProperty(propertyName: string): Promise<NodeHandle> {
+  async getProperty(propertyName: string): Promise<HostHandle> {
     return this.act({
       action: 'get-property',
       name: propertyName,
-    }, (result) => new NodeHandle(result as number, this.ws));
+    }, (result) => new HostHandle(result as number, this.ws));
   }
 }

@@ -114,7 +114,7 @@ process.exit(await runner.runTests());
 
 Check [Options](#options) for full option list.
 
-## Handle
+## HostHandle
 
 APIs similar to [`JSHandle` in Playwright](https://playwright.dev/docs/api/class-jshandle).
 

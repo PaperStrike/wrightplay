@@ -1,5 +1,5 @@
 import { describe, it, expect } from '../default.setup.js';
-import NodeHandle from '../../src/WS/handle/NodeHandle.js';
+import HostHandle from '../../src/WS/handle/HostHandle.js';
 import { pageHandle } from '../../src/index.js';
 
 describe('handle', () => {
@@ -94,7 +94,7 @@ describe('handle', () => {
       return page.context();
     });
     expect(evaluated).toBe(true);
-    expect(contextHandle).toBeInstanceOf(NodeHandle);
+    expect(contextHandle).toBeInstanceOf(HostHandle);
     const browserVersion = await contextHandle.evaluate((context) => (
       context.browser()?.version()
     ));
@@ -122,7 +122,7 @@ describe('handle', () => {
     expect(props).toHaveLength(1);
     const [key, value] = props[0];
     expect(key).toBe('p');
-    expect(value).toBeInstanceOf(NodeHandle);
+    expect(value).toBeInstanceOf(HostHandle);
     await expect(value.jsonValue()).resolves.toEqual([1, 2]);
   });
 
@@ -132,8 +132,8 @@ describe('handle', () => {
       objHandle.getProperty('p'),
       objHandle.getProperty('not-exist'),
     ]);
-    expect(propHandle).toBeInstanceOf(NodeHandle);
-    expect(notExistPropHandle).toBeInstanceOf(NodeHandle);
+    expect(propHandle).toBeInstanceOf(HostHandle);
+    expect(notExistPropHandle).toBeInstanceOf(HostHandle);
     await Promise.all([
       expect(propHandle.jsonValue()).resolves.toEqual([1, 2]),
       expect(notExistPropHandle.jsonValue()).resolves.toBe(undefined),
