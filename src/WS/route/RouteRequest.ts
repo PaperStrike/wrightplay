@@ -1,5 +1,5 @@
 import type playwright from 'playwright-core';
-import NodeHandle from '../handle/NodeHandle.js';
+import HostHandle from '../handle/HostHandle.js';
 import { RouteRequestMeta } from '../message.js';
 import { FallbackOverrides } from './Route.js';
 
@@ -10,8 +10,8 @@ export default class RouteRequest {
     private readonly ws: WebSocket,
   ) {
     const { frame, serviceWorker } = requestMeta;
-    if (frame !== null) NodeHandle.share(frame, ws, this);
-    if (serviceWorker !== null) NodeHandle.share(serviceWorker, ws, this);
+    if (frame !== null) HostHandle.share(frame, ws, this);
+    if (serviceWorker !== null) HostHandle.share(serviceWorker, ws, this);
   }
 
   private fallbackOverrides: FallbackOverrides = {};
@@ -50,7 +50,7 @@ export default class RouteRequest {
     if (this.requestMeta.frame === null) {
       throw new Error('Service Worker requests do not have an associated frame');
     }
-    return new NodeHandle<playwright.Frame>(this.requestMeta.frame, this.ws);
+    return new HostHandle<playwright.Frame>(this.requestMeta.frame, this.ws);
   }
 
   headerValue(name: string) {
@@ -127,7 +127,7 @@ export default class RouteRequest {
 
   serviceWorker() {
     if (this.requestMeta.serviceWorker === null) return null;
-    return new NodeHandle<playwright.Worker>(this.requestMeta.serviceWorker, this.ws);
+    return new HostHandle<playwright.Worker>(this.requestMeta.serviceWorker, this.ws);
   }
 
   url() {

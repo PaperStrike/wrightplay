@@ -7,7 +7,7 @@ import {
 import RouteHandler, { RouteHandlerCallback, RouteMatcher, RouteOptions } from './route/RouteHandler.js';
 import RouteRequest from './route/RouteRequest.js';
 import Route from './route/Route.js';
-import NodeHandle from './handle/NodeHandle.js';
+import HostHandle from './handle/HostHandle.js';
 
 export default class WSClient {
   private readonly uuid: string;
@@ -25,8 +25,8 @@ export default class WSClient {
         resolve();
       }, { once: true });
     });
-    this.pageHandle = new NodeHandle(0, this.ws);
-    this.contextHandle = new NodeHandle(1, this.ws);
+    this.pageHandle = new HostHandle(0, this.ws);
+    this.contextHandle = new HostHandle(1, this.ws);
   }
 
   private routes: RouteHandler[] = [];
@@ -150,7 +150,7 @@ export default class WSClient {
     await route.innerContinue();
   }
 
-  readonly pageHandle: NodeHandle<playwright.Page>;
+  readonly pageHandle: HostHandle<playwright.Page>;
 
-  readonly contextHandle: NodeHandle<playwright.BrowserContext>;
+  readonly contextHandle: HostHandle<playwright.BrowserContext>;
 }
