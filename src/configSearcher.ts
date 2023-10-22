@@ -1,11 +1,21 @@
-import { pathToFileURL } from 'node:url';
 import { lilconfig } from 'lilconfig';
+import jiti from 'jiti';
 
 const moduleName = 'wrightplay';
 
-const load = async (specifier: string) => (
-  (await import(pathToFileURL(specifier).href) as { default: unknown }).default
-);
+const tsLoader = jiti('', {
+  interopDefault: true,
+});
+
+const configLoader = (filepath: string) => {
+  try {
+    return tsLoader(filepath) as unknown;
+  } catch (error) {
+    throw new Error(`Failed to load TS config ${filepath}`, {
+      cause: error,
+    });
+  }
+};
 
 const searcher = lilconfig(moduleName, {
   searchPlaces: [
@@ -18,6 +28,14 @@ const searcher = lilconfig(moduleName, {
     `.${moduleName}rc.js`,
     `.${moduleName}rc.mjs`,
     `.${moduleName}rc.cjs`,
+    `.config/${moduleName}rc`,
+    `.config/${moduleName}rc.json`,
+    `.config/${moduleName}rc.ts`,
+    `.config/${moduleName}rc.mts`,
+    `.config/${moduleName}rc.cts`,
+    `.config/${moduleName}rc.js`,
+    `.config/${moduleName}rc.mjs`,
+    `.config/${moduleName}rc.cjs`,
     `${moduleName}.config.ts`,
     `${moduleName}.config.mts`,
     `${moduleName}.config.cts`,
@@ -26,12 +44,12 @@ const searcher = lilconfig(moduleName, {
     `${moduleName}.config.cjs`,
   ],
   loaders: {
-    '.js': load,
-    '.mjs': load,
-    '.cjs': load,
-    '.ts': load,
-    '.mts': load,
-    '.cts': load,
+    '.js': configLoader,
+    '.mjs': configLoader,
+    '.cjs': configLoader,
+    '.ts': configLoader,
+    '.mts': configLoader,
+    '.cts': configLoader,
   },
 });
 
