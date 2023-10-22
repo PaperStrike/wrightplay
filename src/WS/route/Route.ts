@@ -135,7 +135,7 @@ export default class Route {
       if (body !== undefined) {
         throw new Error('Can specify either body or json parameters');
       }
-      fulfillBody = JSON.stringify(fulfillBody);
+      fulfillBody = JSON.stringify(json);
     } else {
       fulfillBody = body;
     }
