@@ -79,7 +79,8 @@ program
     const runnerOptionsList = await parseRunnerOptionsFromCLI(testAndEntries, options);
     await runnerOptionsList.reduce(async (last, runnerOptions) => {
       await last;
-      const exitCode = await new Runner(runnerOptions).runTests();
+      using runner = new Runner(runnerOptions);
+      const exitCode = await runner.runTests();
       process.exitCode ||= exitCode;
     }, Promise.resolve());
   })

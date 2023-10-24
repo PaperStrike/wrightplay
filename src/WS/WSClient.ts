@@ -80,7 +80,7 @@ export default class WSClient {
     return this.statusPromise;
   }
 
-  bypassFetch(...fetchArgs: Parameters<typeof fetch>) {
+  bypassFetch(...fetchArgs: Parameters<WindowOrWorkerGlobalScope['fetch']>) {
     const request = new Request(...fetchArgs);
     request.headers.set(`bypass-${this.uuid}`, 'true');
     return fetch(request);

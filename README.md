@@ -337,7 +337,9 @@ wrightplay -w
 wrightplay --watch
 ```
 
-Watch the setup and test files for changes and automatically rerun the tests. Defaults to `false`.
+Monitor test file changes and trigger automatic test reruns. Defaults to `false`.
+
+Please be aware that on certain platforms, particularly in the context of large-scale projects, this feature might silently fail or raise some errors.
 
 ### browser
 
