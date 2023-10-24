@@ -1,18 +1,19 @@
 import http from 'node:http';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
-import { EventEmitter } from 'node:events';
 import { fileURLToPath } from 'node:url';
 import type { AddressInfo } from 'node:net';
 import type { SourceMapPayload } from 'node:module';
 
 import playwright from 'playwright';
-import { globby } from 'globby';
 import { lookup as mimeLookup } from 'mrmime';
 import getPort, { portNumbers } from 'get-port';
 import esbuild from 'esbuild';
 import sirv from 'sirv';
 
+import './util/patchDisposable.js';
+import EventEmitter from './util/TypedEventEmitter.js';
+import TestFinder from './TestFinder.js';
 import BrowserLogger from './BrowserLogger.js';
 import CoverageReporter from './CoverageReporter.js';
 import WSServer from './WS/WSServer.js';
@@ -40,12 +41,12 @@ export interface RunnerOptions {
   /**
    * Additional entry points to build. The output name must be explicitly specified.
    * You can use this option to build workers.
-   * @see [Entry points | esbuild - API]{@link https://esbuild.github.io/api/#entry-points}
+   * @see [Entry points | esbuild - API](https://esbuild.github.io/api/#entry-points)
    */
   entryPoints?: Record<string, string>;
 
   /**
-   * Watch the setup and test files for changes and rerun the tests automatically.
+   * Monitor test file changes and trigger automatic test reruns.
    * Defaults to `false`.
    */
   watch?: boolean;
@@ -86,7 +87,7 @@ export type BrowserServer = playwright.BrowserServer;
  */
 export const staticDir = fileURLToPath(new URL('../static', import.meta.url));
 
-export default class Runner {
+export default class Runner implements Disposable {
   readonly cwd: string;
 
   /**
@@ -95,18 +96,18 @@ export default class Runner {
   readonly setupFile: string | undefined;
 
   /**
-   * Promise of an array of absolute test file paths.
+   * Test file finder and watcher.
    */
-  readonly testFiles: Promise<string[]>;
+  readonly testFinder: TestFinder;
 
   /**
    * Additional entry points to build.
-   * @see [Entry points | esbuild - API]{@link https://esbuild.github.io/api/#entry-points}
+   * @see [Entry points | esbuild - API](https://esbuild.github.io/api/#entry-points)
    */
   readonly entryPoints: Record<string, string>;
 
   /**
-   * Watch the setup and test files for changes and automatically rerun the tests.
+   * Monitor test file changes and trigger automatic test reruns.
    */
   readonly watch: boolean;
 
@@ -158,11 +159,10 @@ export default class Runner {
 
     this.cwd = path.resolve(cwd);
 
-    // Globby match test files.
-    this.testFiles = globby(tests, {
+    this.testFinder = new TestFinder({
+      patterns: tests,
       cwd: this.cwd,
-      absolute: true,
-      gitignore: true,
+      watch: this.watch,
     });
 
     // Resolve coverage folder. Defaults to NODE_V8_COVERAGE
@@ -180,10 +180,10 @@ export default class Runner {
   }
 
   /**
-   * Pathname to file content map.
-   * For instance, '/stdin.js' -> 'console.log(1)'.
+   * Pathname to built file hash & content map.
+   * For instance, '/stdin.js' -> { text: 'console.log(1)' hash: 'xxx' }.
    */
-  readonly fileContents: Map<string, string> = new Map();
+  readonly fileContents: Map<string, { text: string, hash: string }> = new Map();
 
   /**
    * Pathname to source map payload map.
@@ -193,19 +193,25 @@ export default class Runner {
 
   private updateBuiltFiles(files: esbuild.OutputFile[]) {
     const { cwd, fileContents, sourceMapPayloads } = this;
-    files.forEach(({ path: absPath, text }) => {
+    return files.reduce((changed, { path: absPath, hash, text }) => {
       const pathname = `/${path.relative(cwd, absPath)}`;
-      const changed = fileContents.get(pathname) !== text;
-      fileContents.set(pathname, text);
+
+      // Skip unchanged files.
+      const same = fileContents.get(pathname)?.hash === hash;
+      if (same) return changed;
+
+      fileContents.set(pathname, { text, hash });
 
       // Cache source maps for stack trace and coverage.
-      if (changed && pathname.endsWith('.map')) {
+      if (pathname.endsWith('.map')) {
         sourceMapPayloads.set(
           pathname.slice(0, -4),
           JSON.parse(text) as SourceMapPayload,
         );
       }
-    });
+
+      return true;
+    }, false);
   }
 
   private readonly cwdRequestListener: http.RequestListener;
@@ -216,55 +222,125 @@ export default class Runner {
     const {
       cwd,
       setupFile,
-      testFiles,
+      testFinder,
       entryPoints,
       watch,
       fileContents,
       staticRequestListener,
     } = this;
 
-    const importFiles = await testFiles;
-    if (setupFile) importFiles.unshift(setupFile.replace(/\\/g, '\\\\'));
-    if (importFiles.length === 0) {
-      throw new Error('No test file found');
-    }
-
     let building = true;
-    const buildEventEmitter = new EventEmitter();
+    const buildEventEmitter = new EventEmitter<{
+      ready: [];
+      changed: [buildCount: number];
+    }>();
     const buildContext = await esbuild.context({
-      stdin: {
-        contents: `${importFiles.map((file) => `import '${file}'`).join('\n')}
-window.dispatchEvent(new CustomEvent('__wrightplay_${this.uuid}_init__'))`,
-        resolveDir: cwd,
+      entryPoints: {
+        ...entryPoints,
+        // The stdin API doesn't support onLoad callbacks,
+        // so we use the entry point workaround.
+        // https://github.com/evanw/esbuild/issues/720
+        stdin: '<stdin>',
       },
-      entryPoints,
+      metafile: watch,
       bundle: true,
       format: 'esm',
       sourcemap: 'linked',
       outdir: './',
       absWorkingDir: cwd,
       define: { WRIGHTPLAY_CLIENT_UUID: `'${this.uuid}'` },
-      plugins: [{
-        name: 'built files updater',
-        setup: (pluginBuild) => {
-          let count = 0;
-          pluginBuild.onStart(() => {
-            building = true;
-          });
-          pluginBuild.onEnd((result) => {
-            this.updateBuiltFiles(result.outputFiles ?? []);
-            count += 1;
-            building = false;
-            buildEventEmitter.emit('end', count);
-          });
+      plugins: [
+        {
+          name: 'import files loader',
+          setup: (pluginBuild) => {
+            pluginBuild.onResolve({ filter: /^<stdin>$/ }, () => ({ path: 'stdin', namespace: 'stdin' }));
+            pluginBuild.onLoad({ filter: /^/, namespace: 'stdin' }, async () => {
+              const importFiles = await testFinder.getFiles();
+              if (setupFile) importFiles.unshift(setupFile.replace(/\\/g, '\\\\'));
+              if (importFiles.length === 0) {
+                // eslint-disable-next-line no-console
+                console.warn('No test file found');
+              }
+              const importStatements = importFiles.map((file) => `import '${file}'`).join('\n');
+              const initFunc = (uuid: string) => window.dispatchEvent(new CustomEvent(`__wrightplay_${uuid}_init__`));
+              return {
+                contents: `${importStatements}\n(${initFunc.toString()})('${this.uuid}')`,
+                resolveDir: cwd,
+              };
+            });
+          },
         },
-      }],
+        {
+          name: 'built files updater',
+          setup: (pluginBuild) => {
+            let buildCount = 0;
+            let lastBuildFailed = false;
+            pluginBuild.onStart(() => {
+              building = true;
+            });
+            pluginBuild.onEnd((result) => {
+              building = false;
+              buildCount += 1;
+              const files = result.outputFiles!;
+              const changed = this.updateBuiltFiles(files);
+              buildEventEmitter.emit('ready'); // signals the http server to respond
+
+              if (!watch) return;
+
+              // Watch the errored files if any.
+              // This may not help the cases where the error may be resolved
+              // in another dir (TestFinder watches the dir instead of the file),
+              // but still better than nothing.
+              const watchFiles: string[] = [];
+              result.errors.forEach((error) => {
+                if (!error.location) return;
+                watchFiles.push(error.location.file);
+              });
+
+              if (watchFiles.length > 0) {
+                lastBuildFailed = true;
+                testFinder.setRelevantFiles(watchFiles);
+                return;
+              }
+
+              // Return if the built content remains unchanged and no recovery is needed.
+              // Since built content remains the same during errors, we should identify a
+              // successful rerun that can replace previous esbuild error messages with
+              // the latest test results, even if the content has been run before.
+              if (!changed && !lastBuildFailed) return;
+              lastBuildFailed = false;
+
+              // Watch the imported files.
+              const { inputs } = result.metafile!;
+              Object.values(inputs).forEach((input) => {
+                input.imports.forEach((im) => {
+                  if (im.external || im.path.startsWith('(disabled):')) return;
+                  watchFiles.push(im.path.replace(/[?#].+$/, ''));
+                });
+              });
+
+              testFinder.setRelevantFiles(watchFiles);
+
+              // Emit the updated event so as to trigger a rerun
+              buildEventEmitter.emit('changed', buildCount);
+            });
+          },
+        },
+      ],
       write: false,
     });
 
     if (watch) {
-      await buildContext.watch();
+      testFinder.on('change', () => {
+        buildContext.rebuild()
+          // Do nothing as esbuild prints the errors itself
+          .catch(() => {});
+      });
+
+      testFinder.updateFiles();
     } else {
+      // Non-watch mode automatically triggers `updateFiles` on construction,
+      // so we don't need to manually call it here.
       await buildContext.rebuild();
     }
 
@@ -283,11 +359,11 @@ window.dispatchEvent(new CustomEvent('__wrightplay_${this.uuid}_init__'))`,
         response.writeHead(200, {
           'Content-Type': `${mimeType}; charset=utf-8`,
         });
-        response.end(builtContent);
+        response.end(builtContent.text);
       };
 
       if (building) {
-        buildEventEmitter.once('end', handleRequest);
+        buildEventEmitter.once('ready', handleRequest);
       } else {
         handleRequest();
       }
@@ -296,15 +372,15 @@ window.dispatchEvent(new CustomEvent('__wrightplay_${this.uuid}_init__'))`,
     const server = http.createServer(esbuildListener) as FileServer;
     server.on('close', () => {
       buildContext.dispose()
-        // eslint-disable-next-line no-console
-        .catch(console.error);
+        // Do nothing as esbuild prints the errors itself
+        .catch(() => {});
     });
 
-    // Forward rebuild end event.
-    buildEventEmitter.on('end', (count: number) => {
+    // Forward file change event for the reruns.
+    buildEventEmitter.on('changed', (count) => {
       // Bypass the first build.
       if (count === 1) return;
-      server.emit('wrightplay:rebuilt');
+      server.emit('wrightplay:changed');
     });
 
     // This is helpful if one day esbuild Incremental API supports
@@ -427,7 +503,7 @@ window.dispatchEvent(new CustomEvent('__wrightplay_${this.uuid}_init__'))`,
     await page.goto('/');
 
     // Rerun the tests on file changes.
-    fileServer.on('wrightplay:rebuilt', () => {
+    fileServer.on('wrightplay:changed', () => {
       page.reload().catch(() => {
         // eslint-disable-next-line no-console
         console.error('Failed to rerun the tests after file changes');
@@ -485,5 +561,9 @@ window.dispatchEvent(new CustomEvent('__wrightplay_${this.uuid}_init__'))`,
     fileServer.close();
 
     return exitCodePromise;
+  }
+
+  [Symbol.dispose]() {
+    this.testFinder[Symbol.dispose]();
   }
 }
