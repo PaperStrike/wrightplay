@@ -13,7 +13,13 @@
   "ignorePatterns": ["build/"],
   "parser": "@typescript-eslint/parser",
   "parserOptions": {
-    "project": ["./tsconfig.json", "./test/tsconfig.json"]
+    "project": [
+      "./src/cli/tsconfig.json",
+      "./src/client/tsconfig.json",
+      "./src/common/tsconfig.json",
+      "./src/server/tsconfig.json",
+      "./test/tsconfig.json"
+    ]
   },
   "plugins": [
     "@typescript-eslint"

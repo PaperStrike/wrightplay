@@ -1,12 +1,12 @@
 import { describe, expect, it } from '../default.setup.js';
-import Handle from '../../src/serializer/Handle.js';
+import Handle from '../../src/common/serializer/Handle.js';
 import {
   SerializableValue,
   SerializedValue,
   serializeValue,
   noFallback,
   parseSerializedValue,
-} from '../../src/serializer/index.js';
+} from '../../src/common/serializer/index.js';
 
 describe('serializer', () => {
   function parse<T extends SerializableValue>(
@@ -114,7 +114,7 @@ describe('serializer', () => {
   });
 
   it('should work for circular references', () => {
-    const arr: SerializableValue = [1, ['deep', { deeper: [] }]];
+    const arr: SerializableValue[] = [1, ['deep', { deeper: [] }]];
     arr.push(arr);
     expect(parse(arr)).toEqual(arr);
   });

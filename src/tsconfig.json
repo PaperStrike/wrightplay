@@ -1,0 +1,13 @@
+{
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    "composite": true,
+    "outDir": "../build",
+  },
+  "references": [
+    { "path": "./cli" },
+    { "path": "./client" },
+    { "path": "./common" },
+    { "path": "./server" }
+  ]
+}

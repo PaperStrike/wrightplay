@@ -1,13 +1,13 @@
 import type http from 'node:http';
 import WebSocket, { WebSocketServer } from 'ws';
 import type playwright from 'playwright';
-import * as Serializer from '../serializer/index.js';
+import * as Serializer from '../../common/serializer/index.js';
 import {
   RouteClientMeta,
   HandleClientMeta,
   parseClientMeta,
   createRouteMeta, createHandleMeta,
-} from './message.js';
+} from '../../common/ws/message.js';
 
 /**
  * WebSocket Server that processes messages from the page client into Playwright actions

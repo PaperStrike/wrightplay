@@ -3,8 +3,8 @@ import {
   parseServerMeta,
   HandleMetaBase,
   HandleClientMeta,
-} from '../message.js';
-import * as Serializer from '../../serializer/index.js';
+} from '../../../common/ws/message.js';
+import * as Serializer from '../../../common/serializer/index.js';
 
 export type Unboxed<Arg> =
   Arg extends URL

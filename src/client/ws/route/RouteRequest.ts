@@ -1,6 +1,6 @@
 import type playwright from 'playwright-core';
 import HostHandle from '../handle/HostHandle.js';
-import { RouteRequestMeta } from '../message.js';
+import { RouteRequestMeta } from '../../../common/ws/message.js';
 import { FallbackOverrides } from './Route.js';
 
 export default class RouteRequest {

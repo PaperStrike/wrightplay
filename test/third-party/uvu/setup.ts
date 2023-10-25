@@ -3,7 +3,7 @@
  * @see [Improve Programmatic Usage · Issue #113 · lukeed/uvu]{@link https://github.com/lukeed/uvu/issues/113}
  */
 /* eslint-disable no-console */
-import { onInit, done } from '../../../src/index.js';
+import { onInit, done } from '../../../src/client/api.js';
 
 let total: number | undefined;
 let passed: number | undefined;

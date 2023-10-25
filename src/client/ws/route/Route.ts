@@ -1,4 +1,4 @@
-import { createRouteMeta, parseServerMeta } from '../message.js';
+import { createRouteMeta, parseServerMeta } from '../../../common/ws/message.js';
 import type RouteRequest from './RouteRequest.js';
 
 export type RouteChain = (done: boolean) => Promise<void>;

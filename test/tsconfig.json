@@ -3,9 +3,13 @@
   "compilerOptions": {
     "allowJs": true,
     "checkJs": true,
+    "composite": true,
+    "lib": ["ESNext", "DOM"],
     "noEmit": true,
-    "rootDir": "../",
-    "target": "ESNext"
+    "outDir": "../build/test"
   },
-  "include": ["**/*", "../static/**/*"]
+  "include": ["./"],
+  "references": [
+    { "path": "../src" }
+  ]
 }

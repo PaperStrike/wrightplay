@@ -4,7 +4,7 @@ import {
   contextUnroute,
   bypassFetch,
   Route,
-} from '../../src/index.js';
+} from '../../src/client/api.js';
 
 describe('basic routing', () => {
   const float: Promise<unknown>[] = [];

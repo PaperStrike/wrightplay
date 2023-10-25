@@ -1,15 +1,15 @@
-import WSClient from './WS/WSClient.js';
+import WSClient from './ws/WSClient.js';
 import TestInitEvent from './event/TestInitEvent.js';
 import TestDoneEvent from './event/TestDoneEvent.js';
 
-import type Route from './WS/route/Route.js';
-import type RouteRequest from './WS/route/RouteRequest.js';
-import type RouteHandler from './WS/route/RouteHandler.js';
+import type Route from './ws/route/Route.js';
+import type RouteRequest from './ws/route/RouteRequest.js';
+import type RouteHandler from './ws/route/RouteHandler.js';
 import type {
   RouteMatcher,
   RouteHandlerCallback,
   RouteOptions,
-} from './WS/route/RouteHandler.js';
+} from './ws/route/RouteHandler.js';
 
 export {
   Route,

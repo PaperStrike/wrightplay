@@ -1,4 +1,4 @@
-import globToRegex from '../../util/globToRegex.js';
+import globToRegex from '../../../common/utils/globToRegex.js';
 import type Route from './Route.js';
 import type RouteRequest from './RouteRequest.js';
 

@@ -3,7 +3,7 @@ import {
   createRouteMeta,
   parseServerMeta,
   RouteServerMeta,
-} from './message.js';
+} from '../../common/ws/message.js';
 import RouteHandler, { RouteHandlerCallback, RouteMatcher, RouteOptions } from './route/RouteHandler.js';
 import RouteRequest from './route/RouteRequest.js';
 import Route from './route/Route.js';
@@ -80,7 +80,7 @@ export default class WSClient {
     return this.statusPromise;
   }
 
-  bypassFetch(...fetchArgs: Parameters<WindowOrWorkerGlobalScope['fetch']>) {
+  bypassFetch(...fetchArgs: Parameters<typeof fetch>) {
     const request = new Request(...fetchArgs);
     request.headers.set(`bypass-${this.uuid}`, 'true');
     return fetch(request);

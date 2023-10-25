@@ -11,12 +11,13 @@ import getPort, { portNumbers } from 'get-port';
 import esbuild from 'esbuild';
 import sirv from 'sirv';
 
-import './util/patchDisposable.js';
-import EventEmitter from './util/TypedEventEmitter.js';
+import '../common/utils/patchDisposable.js';
+import EventEmitter from './utils/TypedEventEmitter.js';
 import TestFinder from './TestFinder.js';
 import BrowserLogger from './BrowserLogger.js';
 import CoverageReporter from './CoverageReporter.js';
-import WSServer from './WS/WSServer.js';
+import WSServer from './ws/WSServer.js';
+import * as clientRunner from '../client/runner.js';
 
 export type BrowserTypeName = 'chromium' | 'firefox' | 'webkit';
 
@@ -262,9 +263,8 @@ export default class Runner implements Disposable {
                 console.warn('No test file found');
               }
               const importStatements = importFiles.map((file) => `import '${file}'`).join('\n');
-              const initFunc = (uuid: string) => window.dispatchEvent(new CustomEvent(`__wrightplay_${uuid}_init__`));
               return {
-                contents: `${importStatements}\n(${initFunc.toString()})('${this.uuid}')`,
+                contents: `${importStatements}\n(${clientRunner.init.toString()})('${this.uuid}')`,
                 resolveDir: cwd,
               };
             });
@@ -457,42 +457,7 @@ export default class Runner implements Disposable {
     const wsServer = new WSServer(this.uuid, fileServer, page);
     const run = async () => {
       await wsServer.reset();
-      return page.evaluate((uuid) => (
-        new Promise<number>((resolve) => {
-          const script = document.createElement('script');
-
-          // Detect inject error
-          script.addEventListener('error', () => {
-            // eslint-disable-next-line no-console
-            console.error('Failed to inject test script');
-            resolve(1);
-          }, { once: true });
-
-          // Detect init error
-          const onUncaughtError = () => {
-            // eslint-disable-next-line no-console
-            console.error('Uncaught error detected while initializing the tests');
-            resolve(1);
-          };
-          window.addEventListener('error', onUncaughtError, { once: true });
-
-          // Detect init end
-          window.addEventListener(`__wrightplay_${uuid}_init__`, () => {
-            window.removeEventListener('error', onUncaughtError);
-          }, { once: true });
-
-          // Detect test done
-          window.addEventListener(`__wrightplay_${uuid}_done__`, ({ exitCode }) => {
-            window.removeEventListener('error', onUncaughtError);
-            resolve(exitCode);
-          }, { once: true });
-
-          // Inject
-          script.src = '/stdin.js';
-          script.type = 'module';
-          document.head.append(script);
-        })
-      ), this.uuid)
+      return page.evaluate(clientRunner.inject, this.uuid)
         .catch((error) => {
           // eslint-disable-next-line no-console
           console.error(error);

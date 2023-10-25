@@ -1,5 +1,5 @@
 import process from 'process';
-import { done } from '../../../src/index.js';
+import { done } from '../../../src/client/api.js';
 
 globalThis.process = process;
 
