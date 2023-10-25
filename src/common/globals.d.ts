@@ -31,7 +31,7 @@ declare global {
     readonly prototype: URL;
   }
 
-  const URL: typeof URLConstructor;
+  const URL: URLConstructor;
 }
 
 export {};
