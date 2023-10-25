@@ -3,29 +3,29 @@
   "description": "playwright, but unit test",
   "version": "0.1.0",
   "type": "module",
-  "main": "./build/index.js",
-  "types": "./build/index.d.ts",
+  "main": "./build/client/api.js",
+  "types": "./build/client/api.d.ts",
   "exports": {
-    ".": "./build/index.js",
-    "./cli": "./build/cli.js",
-    "./node": "./build/node.js",
+    ".": "./build/client/api.js",
+    "./cli": "./build/cli/api.js",
+    "./node": "./build/server/api.js",
     "./package.json": "./package.json"
   },
   "typesVersions": {
     "<4.7": {
       ".": [
-        "./build/index.d.ts"
+        "./build/client/api.d.ts"
       ],
       "cli": [
-        "./build/cli.d.ts"
+        "./build/cli/api.d.ts"
       ],
       "node": [
-        "./build/node.d.ts"
+        "./build/server/api.d.ts"
       ]
     }
   },
   "bin": {
-    "wrightplay": "./build/cli.js"
+    "wrightplay": "./build/cli/index.js"
   },
   "browser": {
     "mocha": "mocha/mocha.js",
@@ -37,13 +37,14 @@
   "repository": "github:PaperStrike/wrightplay",
   "license": "ISC",
   "scripts": {
-    "build": "tsc",
+    "build": "tsc -b",
     "lint": "eslint .",
     "prepare": "npm run build",
-    "test-entry": "ts-node-esm src/cli.ts ww=test/entry/worker.ts test/entry/*.test.*",
-    "test-handle": "ts-node-esm src/cli.ts test/handle/*.test.*",
-    "test-route": "ts-node-esm src/cli.ts test/route/*.test.*",
-    "test": "ts-node-esm src/cli.ts ww=test/entry/worker.ts test/**/*.test.ts !**/third-party",
+    "cli": "ts-node-esm src/cli/index.ts",
+    "test-entry": "npm run cli -- ww=test/entry/worker.ts test/entry/*.test.*",
+    "test-handle": "npm run cli -- test/handle/*.test.*",
+    "test-route": "npm run cli -- test/route/*.test.*",
+    "test": "npm run cli -- ww=test/entry/worker.ts test/**/*.test.ts !**/third-party",
     "test-chromium": "npm test -- --browser chromium",
     "test-firefox": "npm test -- --browser firefox",
     "test-webkit": "npm test -- --browser webkit",
@@ -52,7 +53,8 @@
   "files": [
     "build",
     "static",
-    "src"
+    "src",
+    "!*.tsbuildinfo"
   ],
   "keywords": [
     "test",

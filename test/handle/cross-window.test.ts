@@ -1,5 +1,5 @@
 import { describe, it, expect } from '../default.setup.js';
-import { pageHandle } from '../../src/index.js';
+import { pageHandle } from '../../src/client/api.js';
 
 describe('cross window serialize', () => {
   let contentWindow: typeof window;

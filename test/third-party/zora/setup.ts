@@ -1,6 +1,6 @@
 /* eslint-disable no-restricted-syntax */
 import { hold, report, createTAPReporter } from 'zora';
-import { done, onInit } from '../../../src/index.js';
+import { done, onInit } from '../../../src/client/api.js';
 
 // Hold zora default run
 hold();

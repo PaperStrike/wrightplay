@@ -1,5 +1,5 @@
 import 'mocha';
-import { onInit, done } from '../../../src/index.js';
+import { onInit, done } from '../../../src/client/api.js';
 
 mocha.setup({
   ui: 'bdd',

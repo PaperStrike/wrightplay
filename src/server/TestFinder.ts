@@ -3,8 +3,8 @@ import path from 'node:path';
 import { globby } from 'globby';
 import globParent from 'glob-parent';
 
-import './util/patchDisposable.js';
-import EventEmitter from './util/TypedEventEmitter.js';
+import '../common/utils/patchDisposable.js';
+import EventEmitter from './utils/TypedEventEmitter.js';
 
 export interface TestFinderOptions {
   patterns: string | readonly string[];
