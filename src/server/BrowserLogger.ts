@@ -174,10 +174,14 @@ export default class BrowserLogger {
         originalColumn,
       } = sourceMap.findEntry(+line - 1, +column - 1);
 
-      // The type of `findEntry` is loose. It may return {}.
-      return originalSource !== undefined
-        ? `${pathToFileURL(path.resolve(cwd, originalSource)).href}:${originalLine + 1}:${originalColumn + 1}`
-        : original;
+      // The return type of `findEntry` is inaccurate. It may return {}.
+      if (originalSource === undefined) {
+        return original;
+      }
+
+      const baseDir = path.join(cwd, path.dirname(pathname));
+      const originalSourcePath = path.resolve(baseDir, originalSource);
+      return `${pathToFileURL(originalSourcePath).href}:${originalLine + 1}:${originalColumn + 1}`;
     });
   }
 

@@ -21,35 +21,38 @@ export const inject = (uuid: string) => (
   new Promise<number>((resolve) => {
     const script = document.createElement('script');
 
+    // Avoid test interfering
+    // eslint-disable-next-line no-console
+    const consoleError = console.error;
+
     // Detect inject error
     script.addEventListener('error', () => {
-      // eslint-disable-next-line no-console
-      console.error('Failed to inject test script');
+      consoleError('Failed to inject test script');
       resolve(1);
     }, { once: true });
 
     // Detect init error
-    const onUncaughtError = () => {
-      // eslint-disable-next-line no-console
-      console.error('Uncaught error detected while initializing the tests');
+    const initErrorListenerAbortController = new AbortController();
+    window.addEventListener('error', () => {
+      consoleError('Uncaught error detected while initializing the tests');
       resolve(1);
-    };
-    window.addEventListener('error', onUncaughtError, { once: true });
+    }, { once: true, signal: initErrorListenerAbortController.signal });
 
     // Detect init end
     window.addEventListener(`__wrightplay_${uuid}_init__`, () => {
-      window.removeEventListener('error', onUncaughtError);
+      initErrorListenerAbortController.abort();
     }, { once: true });
 
     // Detect test done
     window.addEventListener(`__wrightplay_${uuid}_done__`, ({ exitCode }) => {
-      window.removeEventListener('error', onUncaughtError);
+      initErrorListenerAbortController.abort();
       resolve(exitCode);
     }, { once: true });
 
     // Inject
-    script.src = '/stdin.js';
+    script.src = '/__wrightplay__/stdin.js';
     script.type = 'module';
     document.head.append(script);
+    document.head.removeChild(script);
   })
 );

@@ -195,7 +195,7 @@ export default class Runner implements Disposable {
   private updateBuiltFiles(files: esbuild.OutputFile[]) {
     const { cwd, fileContents, sourceMapPayloads } = this;
     return files.reduce((changed, { path: absPath, hash, text }) => {
-      const pathname = `/${path.relative(cwd, absPath)}`;
+      const pathname = `/${path.relative(cwd, absPath).replace(/\\/g, '/')}`;
 
       // Skip unchanged files.
       const same = fileContents.get(pathname)?.hash === hash;
@@ -241,7 +241,7 @@ export default class Runner implements Disposable {
         // The stdin API doesn't support onLoad callbacks,
         // so we use the entry point workaround.
         // https://github.com/evanw/esbuild/issues/720
-        stdin: '<stdin>',
+        '__wrightplay__/stdin': '<stdin>',
       },
       metafile: watch,
       bundle: true,
@@ -254,8 +254,8 @@ export default class Runner implements Disposable {
         {
           name: 'import files loader',
           setup: (pluginBuild) => {
-            pluginBuild.onResolve({ filter: /^<stdin>$/ }, () => ({ path: 'stdin', namespace: 'stdin' }));
-            pluginBuild.onLoad({ filter: /^/, namespace: 'stdin' }, async () => {
+            pluginBuild.onResolve({ filter: /^<stdin>$/ }, () => ({ path: 'stdin', namespace: 'wrightplay' }));
+            pluginBuild.onLoad({ filter: /^/, namespace: 'wrightplay' }, async () => {
               const importFiles = await testFinder.getFiles();
               if (setupFile) importFiles.unshift(setupFile.replace(/\\/g, '\\\\'));
               if (importFiles.length === 0) {
@@ -349,8 +349,7 @@ export default class Runner implements Disposable {
     }
 
     const esbuildListener: http.RequestListener = (request, response) => {
-      const { url } = request as typeof request & { url: string };
-      const pathname = url.split(/[?#]/, 1)[0];
+      const { pathname } = new URL(request.url!, `http://${request.headers.host}`);
 
       const handleRequest = () => {
         const builtContent = fileContents.get(pathname);
