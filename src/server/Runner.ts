@@ -259,8 +259,12 @@ export default class Runner implements Disposable {
               const importFiles = await testFinder.getFiles();
               if (setupFile) importFiles.unshift(setupFile.replace(/\\/g, '\\\\'));
               if (importFiles.length === 0) {
-                // eslint-disable-next-line no-console
-                console.warn('No test file found');
+                if (watch) {
+                  // eslint-disable-next-line no-console
+                  console.error('No test file found');
+                } else {
+                  throw new Error('No test file found');
+                }
               }
               const importStatements = importFiles.map((file) => `import '${file}'`).join('\n');
               return {
