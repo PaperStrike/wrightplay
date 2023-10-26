@@ -1,5 +1,5 @@
 import 'mocha';
-import { onInit, done } from '../../../src/client/api.js';
+import { onInit, done } from 'wrightplay';
 
 mocha.setup({
   ui: 'bdd',

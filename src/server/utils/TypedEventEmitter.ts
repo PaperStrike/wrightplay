@@ -12,7 +12,7 @@ export type EventName = string | symbol;
 
 export type ArbitraryEventMap = Record<EventName, unknown[]>;
 
-export interface EventEmitter<T extends EventMap<T> = ArbitraryEventMap> extends BaseEventEmitter {
+interface EventEmitter<T extends EventMap<T> = ArbitraryEventMap> extends BaseEventEmitter {
   addListener<K extends EventOf<T>>(eventName: K, listener: (...args: T[K]) => void): this;
   on<K extends EventOf<T>>(eventName: K, listener: (...args: T[K]) => void): this;
   once<K extends EventOf<T>>(eventName: K, listener: (...args: T[K]) => void): this;
@@ -35,6 +35,6 @@ export interface EventEmitterConstructor {
 
 // @ts-expect-error not assignable as we add type restrictions
 // eslint-disable-next-line @typescript-eslint/no-redeclare
-export const EventEmitter: EventEmitterConstructor = BaseEventEmitter;
+const EventEmitter: EventEmitterConstructor = BaseEventEmitter;
 
 export default EventEmitter;
