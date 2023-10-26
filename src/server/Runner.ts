@@ -86,7 +86,7 @@ export type BrowserServer = playwright.BrowserServer;
 /**
  * Absolute path to static file directory.
  */
-export const staticDir = fileURLToPath(new URL('../static', import.meta.url));
+export const staticDir = fileURLToPath(new URL('../../static', import.meta.url));
 
 export default class Runner implements Disposable {
   readonly cwd: string;
