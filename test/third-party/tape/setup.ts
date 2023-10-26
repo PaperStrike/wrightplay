@@ -1,5 +1,5 @@
 import process from 'process';
-import { done } from '../../../src/client/api.js';
+import { done } from 'wrightplay';
 
 globalThis.process = process;
 

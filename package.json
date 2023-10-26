@@ -92,6 +92,7 @@
     "c8": "^8.0.1",
     "eslint": "^8.52.0",
     "eslint-config-airbnb-typescript": "^17.1.0",
+    "eslint-config-ts-parser-service": "^0.2.0",
     "eslint-plugin-import": "^2.28.1",
     "events": "^3.3.0",
     "expect": "^28.1.3",

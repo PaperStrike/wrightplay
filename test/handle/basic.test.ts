@@ -1,6 +1,6 @@
-import { describe, it, expect } from '../default.setup.js';
+import { pageHandle } from 'wrightplay';
 import HostHandle from '../../src/client/ws/handle/HostHandle.js';
-import { pageHandle } from '../../src/client/api.js';
+import { describe, it, expect } from '../default.setup.js';
 
 describe('handle', () => {
   it('should evaluate', async () => {

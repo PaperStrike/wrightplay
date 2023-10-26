@@ -1,10 +1,10 @@
-import { describe, it, expect } from '../default.setup.js';
 import {
   contextRoute,
   contextUnroute,
   bypassFetch,
   Route,
-} from '../../src/client/api.js';
+} from 'wrightplay';
+import { describe, it, expect } from '../default.setup.js';
 
 describe('basic routing', () => {
   const float: Promise<unknown>[] = [];

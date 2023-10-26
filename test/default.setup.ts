@@ -11,7 +11,7 @@ const {
 } = await (async () => {
   if (typeof window === 'undefined') return nodeMocha;
 
-  const { onInit, done } = await import('../src/client/api.js');
+  const { onInit, done } = await import('wrightplay');
 
   mocha.setup({
     ui: 'bdd',

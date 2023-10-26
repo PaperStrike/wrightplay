@@ -8,7 +8,8 @@
     "plugin:@typescript-eslint/recommended",
     "plugin:@typescript-eslint/recommended-requiring-type-checking",
     "airbnb-base",
-    "airbnb-typescript/base"
+    "airbnb-typescript/base",
+    "ts-parser-service/resolver"
   ],
   "ignorePatterns": ["build/"],
   "parser": "@typescript-eslint/parser",
@@ -26,6 +27,8 @@
   ],
   "root": true,
   "rules": {
-    "import/extensions": ["error", "ignorePackages"]
+    "import/extensions": ["error", "ignorePackages", {
+      "ts": "never"
+    }]
   }
 }
