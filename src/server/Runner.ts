@@ -261,7 +261,7 @@ export default class Runner implements Disposable {
               importFiles.sort();
 
               // Prepend the setup file if any
-              if (setupFile) importFiles.unshift(setupFile.replace(/\\/g, '\\\\'));
+              if (setupFile) importFiles.unshift(path.resolve(cwd, setupFile).replace(/\\/g, '/'));
 
               if (importFiles.length === 0) {
                 if (watch) {
