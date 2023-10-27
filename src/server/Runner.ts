@@ -459,20 +459,43 @@ export default class Runner implements Disposable {
 
     const wsServer = new WSServer(this.uuid, fileServer, page);
     const run = async () => {
-      await wsServer.reset();
-      return page.evaluate(clientRunner.inject, this.uuid)
-        .catch((error) => {
-          // eslint-disable-next-line no-console
-          console.error(error);
-          return 1;
-        });
+      // Listen to the file change event during the test run to
+      // ignore the evaluate error caused by automatic test reruns.
+      let fileChanged = false;
+      const fileChangeListener = () => { fileChanged = true; };
+      fileServer.once('wrightplay:changed', fileChangeListener);
+
+      try {
+        await wsServer.reset();
+        return await page.evaluate(clientRunner.inject, this.uuid);
+      } catch (error) {
+        // Skip the error print if the file has changed.
+        // eslint-disable-next-line no-console
+        if (!fileChanged) console.error(error);
+        return 1;
+      } finally {
+        // Remove the listener to avoid potential memory leak.
+        fileServer.off('wrightplay:changed', fileChangeListener);
+      }
     };
 
-    await page.goto('/');
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
 
     // Rerun the tests on file changes.
     fileServer.on('wrightplay:changed', () => {
-      page.reload().catch(() => {
+      (async () => {
+        // Discard the print error on navigation.
+        page.off('console', bLog.forwardConsole);
+        page.off('pageerror', bLog.forwardError);
+        bLog.discardLastPrintError();
+
+        // Reload the page to rerun the tests.
+        await page.reload({ waitUntil: 'commit' });
+
+        // Restore the print forwarding.
+        page.on('console', bLog.forwardConsole);
+        page.on('pageerror', bLog.forwardError);
+      })().catch(() => {
         // eslint-disable-next-line no-console
         console.error('Failed to rerun the tests after file changes');
       });

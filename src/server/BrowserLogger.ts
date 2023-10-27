@@ -188,6 +188,13 @@ export default class BrowserLogger {
   lastPrint: Promise<void> = Promise.resolve();
 
   /**
+   * Discard the last print error.
+   */
+  discardLastPrintError() {
+    this.lastPrint = this.lastPrint.catch(() => {});
+  }
+
+  /**
    * Print messages to console with specified log level and color.
    */
   printWithOptions(
