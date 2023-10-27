@@ -256,8 +256,13 @@ export default class Runner implements Disposable {
           setup: (pluginBuild) => {
             pluginBuild.onResolve({ filter: /^<stdin>$/ }, () => ({ path: 'stdin', namespace: 'wrightplay' }));
             pluginBuild.onLoad({ filter: /^/, namespace: 'wrightplay' }, async () => {
+              // Sort to make the output stable
               const importFiles = await testFinder.getFiles();
+              importFiles.sort();
+
+              // Prepend the setup file if any
               if (setupFile) importFiles.unshift(setupFile.replace(/\\/g, '\\\\'));
+
               if (importFiles.length === 0) {
                 if (watch) {
                   // eslint-disable-next-line no-console
@@ -266,6 +271,7 @@ export default class Runner implements Disposable {
                   throw new Error('No test file found');
                 }
               }
+
               const importStatements = importFiles.map((file) => `import '${file}'`).join('\n');
               return {
                 contents: `${importStatements}\n(${clientRunner.init.toString()})('${this.uuid}')`,
