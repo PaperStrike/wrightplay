@@ -2,9 +2,10 @@ import 'mocha';
 import { onInit, done } from 'wrightplay';
 
 mocha.setup({
-  ui: 'bdd',
-  reporter: 'spec',
   color: true,
+  fullTrace: true,
+  reporter: 'spec',
+  ui: 'bdd',
 });
 
 onInit(() => {

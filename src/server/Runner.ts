@@ -195,7 +195,7 @@ export default class Runner implements Disposable {
   private updateBuiltFiles(files: esbuild.OutputFile[]) {
     const { cwd, fileContents, sourceMapPayloads } = this;
     return files.reduce((changed, { path: absPath, hash, text }) => {
-      const pathname = `/${path.relative(cwd, absPath)}`;
+      const pathname = `/${path.relative(cwd, absPath).replace(/\\/g, '/')}`;
 
       // Skip unchanged files.
       const same = fileContents.get(pathname)?.hash === hash;
@@ -241,7 +241,7 @@ export default class Runner implements Disposable {
         // The stdin API doesn't support onLoad callbacks,
         // so we use the entry point workaround.
         // https://github.com/evanw/esbuild/issues/720
-        stdin: '<stdin>',
+        '__wrightplay__/stdin': '<stdin>',
       },
       metafile: watch,
       bundle: true,
@@ -254,10 +254,15 @@ export default class Runner implements Disposable {
         {
           name: 'import files loader',
           setup: (pluginBuild) => {
-            pluginBuild.onResolve({ filter: /^<stdin>$/ }, () => ({ path: 'stdin', namespace: 'stdin' }));
-            pluginBuild.onLoad({ filter: /^/, namespace: 'stdin' }, async () => {
+            pluginBuild.onResolve({ filter: /^<stdin>$/ }, () => ({ path: 'stdin', namespace: 'wrightplay' }));
+            pluginBuild.onLoad({ filter: /^/, namespace: 'wrightplay' }, async () => {
+              // Sort to make the output stable
               const importFiles = await testFinder.getFiles();
+              importFiles.sort();
+
+              // Prepend the setup file if any
               if (setupFile) importFiles.unshift(setupFile.replace(/\\/g, '\\\\'));
+
               if (importFiles.length === 0) {
                 if (watch) {
                   // eslint-disable-next-line no-console
@@ -266,6 +271,7 @@ export default class Runner implements Disposable {
                   throw new Error('No test file found');
                 }
               }
+
               const importStatements = importFiles.map((file) => `import '${file}'`).join('\n');
               return {
                 contents: `${importStatements}\n(${clientRunner.init.toString()})('${this.uuid}')`,
@@ -349,8 +355,7 @@ export default class Runner implements Disposable {
     }
 
     const esbuildListener: http.RequestListener = (request, response) => {
-      const { url } = request as typeof request & { url: string };
-      const pathname = url.split(/[?#]/, 1)[0];
+      const { pathname } = new URL(request.url!, `http://${request.headers.host}`);
 
       const handleRequest = () => {
         const builtContent = fileContents.get(pathname);
@@ -460,20 +465,43 @@ export default class Runner implements Disposable {
 
     const wsServer = new WSServer(this.uuid, fileServer, page);
     const run = async () => {
-      await wsServer.reset();
-      return page.evaluate(clientRunner.inject, this.uuid)
-        .catch((error) => {
-          // eslint-disable-next-line no-console
-          console.error(error);
-          return 1;
-        });
+      // Listen to the file change event during the test run to
+      // ignore the evaluate error caused by automatic test reruns.
+      let fileChanged = false;
+      const fileChangeListener = () => { fileChanged = true; };
+      fileServer.once('wrightplay:changed', fileChangeListener);
+
+      try {
+        await wsServer.reset();
+        return await page.evaluate(clientRunner.inject, this.uuid);
+      } catch (error) {
+        // Skip the error print if the file has changed.
+        // eslint-disable-next-line no-console
+        if (!fileChanged) console.error(error);
+        return 1;
+      } finally {
+        // Remove the listener to avoid potential memory leak.
+        fileServer.off('wrightplay:changed', fileChangeListener);
+      }
     };
 
-    await page.goto('/');
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
 
     // Rerun the tests on file changes.
     fileServer.on('wrightplay:changed', () => {
-      page.reload().catch(() => {
+      (async () => {
+        // Discard the print error on navigation.
+        page.off('console', bLog.forwardConsole);
+        page.off('pageerror', bLog.forwardError);
+        bLog.discardLastPrintError();
+
+        // Reload the page to rerun the tests.
+        await page.reload({ waitUntil: 'commit' });
+
+        // Restore the print forwarding.
+        page.on('console', bLog.forwardConsole);
+        page.on('pageerror', bLog.forwardError);
+      })().catch(() => {
         // eslint-disable-next-line no-console
         console.error('Failed to rerun the tests after file changes');
       });

@@ -14,9 +14,10 @@ const {
   const { onInit, done } = await import('../src/client/api.js');
 
   mocha.setup({
-    ui: 'bdd',
-    reporter: 'spec',
     color: true,
+    fullTrace: true,
+    reporter: 'spec',
+    ui: 'bdd',
   });
 
   onInit(() => {
