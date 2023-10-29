@@ -104,8 +104,7 @@ If you want Node.js API,
 ```ts
 import { Runner } from 'wrightplay/node';
 
-// Or manually calling `runner.dispose()` to release resources
-await using runner = new Runner({
+const runner = new Runner({
   setup: 'test/setup.ts',
   tests: 'test/**/*.spec.ts',
 });

@@ -1,6 +1,6 @@
 /**
  * uvu has no reliable or future-proof way to run and get the test results programmatically yet.
- * @see [Improve Programmatic Usage · Issue #113 · lukeed/uvu]{@link https://github.com/lukeed/uvu/issues/113}
+ * @see [Improve Programmatic Usage · Issue #113 · lukeed/uvu](https://github.com/lukeed/uvu/issues/113)
  */
 /* eslint-disable no-console */
 import { onInit, done } from 'wrightplay';

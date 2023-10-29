@@ -70,8 +70,25 @@ export interface RunnerOptions {
 
 export type BrowserServer = playwright.BrowserServer;
 
-export default class Runner implements AsyncDisposable {
+export default class Runner {
   readonly cwd: string;
+
+  /**
+   * File to run before the test files.
+   */
+  readonly setupFile: string | undefined;
+
+  /**
+   * Test file patterns.
+   */
+  readonly testPatterns: string | string[];
+
+  /**
+   * Additional entry points to build. The output name must be explicitly specified.
+   * You can use this option to build workers.
+   * @see [Entry points | esbuild - API](https://esbuild.github.io/api/#entry-points)
+   */
+  readonly entryPoints: Record<string, string>;
 
   /**
    * Monitor test file changes and trigger automatic test reruns.
@@ -84,20 +101,16 @@ export default class Runner implements AsyncDisposable {
   readonly browserType: BrowserTypeName;
 
   /**
+   * Options used to launch the test browser server. Defaults to the Playwright defaults.
+   * @see playwright.BrowserType.launchServer
+   */
+  readonly browserServerOptions: BrowserServerOptions;
+
+  /**
    * Whether to run browser in headless mode.
    * @see BrowserServerOptions.headless
    */
   readonly headless: boolean;
-
-  /**
-   * File server for the test files.
-   */
-  readonly testServer: TestServer;
-
-  /**
-   * Browser server launch promise.
-   */
-  readonly browserServerPromise: Promise<BrowserServer>;
 
   /**
    * Directory to save the coverage output file. Defaults to `NODE_V8_COVERAGE`
@@ -121,25 +134,19 @@ export default class Runner implements AsyncDisposable {
     headless = browserServerOptions.headless ?? !browserServerOptions.devtools,
     noCov = browser !== 'chromium',
   }: RunnerOptions) {
+    this.setupFile = setup;
+    this.testPatterns = tests;
+    this.entryPoints = entryPoints;
     this.watch = watch;
     this.browserType = browser;
     this.headless = headless;
 
     this.cwd = path.resolve(cwd);
 
-    this.testServer = new TestServer({
-      cwd: this.cwd,
-      setup,
-      tests,
-      entryPoints,
-      watch,
-      uuid: this.uuid,
-    });
-
-    this.browserServerPromise = playwright[browser].launchServer({
+    this.browserServerOptions = {
       ...browserServerOptions,
       headless,
-    });
+    };
 
     // Resolve coverage folder. Defaults to NODE_V8_COVERAGE
     if (!noCov && process.env.NODE_V8_COVERAGE && browser === 'chromium') {
@@ -153,11 +160,20 @@ export default class Runner implements AsyncDisposable {
   async runTests(): Promise<number> {
     await using stack = new AsyncDisposableStack();
 
+    const testServer = stack.use(new TestServer({
+      cwd: this.cwd,
+      setup: this.setupFile,
+      tests: this.testPatterns,
+      entryPoints: this.entryPoints,
+      watch: this.watch,
+      uuid: this.uuid,
+    }));
+
     const [addressInfo, browserServer] = await Promise.all([
-      this.testServer.launch(),
-      this.browserServerPromise,
+      testServer.launch(),
+      playwright[this.browserType].launchServer(this.browserServerOptions),
     ]);
-    stack.defer(() => this.testServer.close());
+    stack.defer(() => browserServer.close());
 
     const browser = await playwright[this.browserType].connect(browserServer.wsEndpoint());
     stack.defer(() => browser.close());
@@ -176,7 +192,7 @@ export default class Runner implements AsyncDisposable {
     const page = await browserContext.newPage();
     stack.defer(() => page.close());
 
-    const { cwd, browserType, testServer } = this;
+    const { cwd, browserType } = this;
     const { sourceMapPayloads, httpServer } = testServer;
     const bLog = stack.use(new BrowserLogger({
       browserType,
@@ -261,16 +277,5 @@ export default class Runner implements AsyncDisposable {
     }
 
     return exitCodePromise;
-  }
-
-  async dispose() {
-    await Promise.all([
-      this.browserServerPromise.then((browserServer) => browserServer.close()),
-      this.testServer[Symbol.asyncDispose](),
-    ]);
-  }
-
-  [Symbol.asyncDispose]() {
-    return this.dispose();
   }
 }

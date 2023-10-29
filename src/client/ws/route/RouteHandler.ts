@@ -28,7 +28,7 @@ export default class RouteHandler {
     this.maxHandleCount = options.times ?? Infinity;
 
     /**
-     * @see [urlMatches, playwright/netUtils.ts]{@link https://github.com/microsoft/playwright/blob/76abb3a5be7cab43e97c49bac099d6eb7da9ef98/packages/playwright-core/src/common/netUtils.ts#L107}
+     * @see [urlMatches, playwright/netUtils.ts](https://github.com/microsoft/playwright/blob/76abb3a5be7cab43e97c49bac099d6eb7da9ef98/packages/playwright-core/src/common/netUtils.ts#L107)
      */
     if (url === '') {
       this.parsedMatcher = () => true;

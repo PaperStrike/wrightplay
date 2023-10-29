@@ -77,7 +77,7 @@ export const program = command
     const runnerOptionsList = await parseRunnerOptionsFromCLI(testAndEntries, options);
     await runnerOptionsList.reduce(async (last, runnerOptions) => {
       await last;
-      await using runner = new Runner(runnerOptions);
+      const runner = new Runner(runnerOptions);
       const exitCode = await runner.runTests();
       process.exitCode ||= exitCode;
     }, Promise.resolve());

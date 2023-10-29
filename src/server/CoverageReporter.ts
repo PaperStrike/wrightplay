@@ -4,18 +4,18 @@ import { mkdir, writeFile } from 'fs/promises';
 import type { Profiler } from 'inspector';
 import type { SourceMapPayload } from 'module';
 
-import type playwright from 'playwright-core';
+import type playwright from 'playwright';
 
 /**
  * Playwright's `ScriptCoverage`, which has an extra `source` property.
- * @see [coverage.stopJSCoverage() | Playwright]{@link https://playwright.dev/docs/api/class-coverage#coverage-stop-js-coverage}
- * @see [Profiler.ScriptCoverage | Chrome DevTools Protocol]{@link https://chromedevtools.github.io/devtools-protocol/tot/Profiler/#type-ScriptCoverage}
+ * @see [coverage.stopJSCoverage() | Playwright](https://playwright.dev/docs/api/class-coverage#coverage-stop-js-coverage)
+ * @see [Profiler.ScriptCoverage | Chrome DevTools Protocol](https://chromedevtools.github.io/devtools-protocol/tot/Profiler/#type-ScriptCoverage)
  */
 type PlaywrightScriptCoverage = Awaited<ReturnType<playwright.Coverage['stopJSCoverage']>>[number];
 
 /**
  * Node.js source map cache.
- * @see [Source map cache | Node.js Documentation]{@link https://nodejs.org/api/cli.html#source-map-cache}
+ * @see [Source map cache | Node.js Documentation](https://nodejs.org/api/cli.html#source-map-cache)
  */
 interface NodeSourceMapCache {
   [fileURL: string]: {
@@ -27,7 +27,7 @@ interface NodeSourceMapCache {
 
 /**
  * Node.js coverage output.
- * @see [Coverage output | Node.js Documentation]{@link https://nodejs.org/api/cli.html#coverage-output}
+ * @see [Coverage output | Node.js Documentation](https://nodejs.org/api/cli.html#coverage-output)
  */
 interface NodeCoverageOutput extends Profiler.GetBestEffortCoverageReturnType {
   'source-map-cache'?: NodeSourceMapCache;
@@ -59,7 +59,7 @@ export type CoverageReporterOptions = {
 
 /**
  * Return an array of the length of each line.
- * @see [source-map-cache.js · nodejs/node]{@link https://github.com/nodejs/node/blob/26846a05e2ac232742e6a0bfaa7baac5e86a015b/lib/internal/source_map/source_map_cache.js#L129-L139}
+ * @see [source-map-cache.js · nodejs/node](https://github.com/nodejs/node/blob/26846a05e2ac232742e6a0bfaa7baac5e86a015b/lib/internal/source_map/source_map_cache.js#L129-L139)
  */
 const getLineLengths = (content: string) => (
   content.split(/[\n\u2028\u2029]/).map((line) => line.length)
@@ -67,7 +67,7 @@ const getLineLengths = (content: string) => (
 
 /**
  * Return the filename the coverage should be written as.
- * @see [inspector_profiler.cc · nodejs/node]{@link https://github.com/nodejs/node/blob/26846a05e2ac232742e6a0bfaa7baac5e86a015b/src/inspector_profiler.cc#L172-L179}
+ * @see [inspector_profiler.cc · nodejs/node](https://github.com/nodejs/node/blob/26846a05e2ac232742e6a0bfaa7baac5e86a015b/src/inspector_profiler.cc#L172-L179)
  */
 const getCoverageFileName = (pid: number) => `/coverage-${pid}-${Date.now()}-0.json`;
 
