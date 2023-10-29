@@ -246,7 +246,7 @@ export default class BrowserLogger implements AsyncDisposable {
   /**
    * Print a playwright browser message to console.
    * Some types of messages don't yet work well (and may never).
-   * @see [&#91;BUG&#93; console.count/countEnd event has wrong args in chromium/webkit, wrong text in firefox, and wrong type in webkit · Issue #10604 · microsoft/playwright]{@link https://github.com/microsoft/playwright/issues/10604}
+   * @see [[BUG] console.count/countEnd event has wrong args in chromium/webkit, wrong text in firefox, and wrong type in webkit · Issue #10604 · microsoft/playwright](https://github.com/microsoft/playwright/issues/10604)
    */
   readonly forwardConsole = (message: ConsoleMessage) => {
     const protocolType = message.type() as ProtocolType;
@@ -305,7 +305,7 @@ export default class BrowserLogger implements AsyncDisposable {
        * `evaluate` does the exact same serialize steps as `jsonValue` but a lot quicker
        * here as it can serialize a bunch at the same time.
        * Circular references are supported on Playwright >= 1.22 but undocumented yet.
-       * @see import('playwright-core').JSHandle.jsonValue
+       * @see import('playwright').JSHandle.jsonValue
        */
       const [firstIsString, args = []] = await argHandles[0].evaluate(
         (firstArg, passedArgs: unknown[]) => [typeof firstArg === 'string', passedArgs],
@@ -314,7 +314,7 @@ export default class BrowserLogger implements AsyncDisposable {
 
       /**
        * If the first arg is not a string but mapped to a string, escape `%`.
-       * @see [Console string substitutions | MDN]{@link https://developer.mozilla.org/en-US/docs/Web/API/console#using_string_substitutions}
+       * @see [Console string substitutions | MDN](https://developer.mozilla.org/en-US/docs/Web/API/console#using_string_substitutions)
        */
       if (!firstIsString && typeof args[0] === 'string') {
         args[0] = args[0].replace(/%/g, '%%');
