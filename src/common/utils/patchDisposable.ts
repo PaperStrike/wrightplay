@@ -191,7 +191,7 @@ globalThis.AsyncDisposableStack ??= class AsyncDisposableStack {
       const { m, v } = stack.pop()!;
       try {
         // eslint-disable-next-line no-await-in-loop
-        await m?.call(v);
+        await (m?.call(v));
       } catch (e) {
         error = hasError ? new SuppressedError(e, error, 'An error was suppressed during disposal.') : e;
         hasError = true;
@@ -214,7 +214,7 @@ globalThis.AsyncDisposableStack ??= class AsyncDisposableStack {
       let method = Symbol.asyncDispose in value
         ? value[Symbol.asyncDispose] as () => unknown
         : undefined;
-      if (!method) {
+      if (method === undefined) {
         const syncDispose = Symbol.dispose in value ? value[Symbol.dispose] : undefined;
         if (typeof syncDispose === 'function') {
           method = function omitReturnValue(this: unknown) { syncDispose.call(this); };
@@ -238,7 +238,7 @@ globalThis.AsyncDisposableStack ??= class AsyncDisposableStack {
       throw new TypeError('The callback is not a function');
     }
 
-    this.#stack.push({ v: undefined, m: onDisposeAsync.bind(undefined, value) });
+    this.#stack.push({ v: undefined, m: () => onDisposeAsync.call(undefined, value) });
 
     return value;
   }
