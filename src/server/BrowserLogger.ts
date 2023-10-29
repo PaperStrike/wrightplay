@@ -1,10 +1,10 @@
-import path from 'path';
 import util from 'util';
-import { pathToFileURL } from 'url';
 import { SourceMap, SourceMapPayload } from 'module';
 
 import chalk from 'chalk';
-import type { ConsoleMessage } from 'playwright-core';
+import type { BrowserContext, ConsoleMessage, WebError } from 'playwright';
+
+import '../common/utils/patchDisposable.js';
 
 /**
  * Playwright protocol type to console level mappings.
@@ -38,11 +38,6 @@ export type ProtocolType = keyof typeof protocolTypeToConsoleLevel;
 
 export interface BrowserLogOptions {
   /**
-   * The base dictionary of mapped file paths.
-   */
-  cwd?: string;
-
-  /**
    * Browser type affects the output stack trace strings.
    *
    * Chromium-based browsers use the same format as Node.js, prefixing the trace with `    at `.
@@ -50,6 +45,11 @@ export interface BrowserLogOptions {
    * Chromium-based and firefox prefix uncaught errors with `Uncaught `, while webkit not.
    */
   browserType?: 'chromium' | 'firefox' | 'webkit';
+
+  /**
+   * The browser context that the logger is attached to.
+   */
+  browserContext?: BrowserContext;
 
   /**
    * Pathname to source map payload map.
@@ -69,10 +69,13 @@ export interface PrintOptions {
   color?: (text: string) => string;
 }
 
-export default class BrowserLogger {
-  readonly cwd: string;
-
+export default class BrowserLogger implements AsyncDisposable {
   readonly browserType: 'chromium' | 'firefox' | 'webkit';
+
+  /**
+   * The browser context that the logger is attached to.
+   */
+  readonly browserContext: BrowserContext | undefined;
 
   /**
    * The prefix of stack traces in the target browser.
@@ -107,14 +110,13 @@ export default class BrowserLogger {
   readonly stackTraceRegex: RegExp;
 
   constructor({
-    cwd = process.cwd(),
     browserType = 'chromium',
+    browserContext,
     sourceMapPayloads = new Map(),
     originalStackBase = 'http://127.0.0.1',
   }: BrowserLogOptions = {}) {
-    this.cwd = cwd;
-
     this.browserType = browserType;
+    this.browserContext = browserContext;
     this.stackTracePrefix = browserType === 'chromium' ? '    at ' : '@';
     this.uncaughtErrorPrefix = browserType === 'webkit' ? '' : 'Uncaught ';
 
@@ -138,7 +140,6 @@ export default class BrowserLogger {
    */
   mapStack(text: string) {
     const {
-      cwd,
       stackTraceRegex,
       sourceMapPayloads,
       sourceMapCache,
@@ -179,20 +180,11 @@ export default class BrowserLogger {
         return original;
       }
 
-      const baseDir = path.join(cwd, path.dirname(pathname));
-      const originalSourcePath = path.resolve(baseDir, originalSource);
-      return `${pathToFileURL(originalSourcePath).href}:${originalLine + 1}:${originalColumn + 1}`;
+      return `${originalSource}:${originalLine + 1}:${originalColumn + 1}`;
     });
   }
 
-  lastPrint: Promise<void> = Promise.resolve();
-
-  /**
-   * Discard the last print error.
-   */
-  discardLastPrintError() {
-    this.lastPrint = this.lastPrint.catch(() => {});
-  }
+  private lastPrint: Promise<void> = Promise.resolve();
 
   /**
    * Print messages to console with specified log level and color.
@@ -304,6 +296,10 @@ export default class BrowserLogger {
     }
 
     const argsPromise = (async () => {
+      if (argHandles.length === 0) {
+        return [];
+      }
+
       /**
        * Parse the type of the first argument and the JSON presentation of each argument.
        * `evaluate` does the exact same serialize steps as `jsonValue` but a lot quicker
@@ -311,10 +307,10 @@ export default class BrowserLogger {
        * Circular references are supported on Playwright >= 1.22 but undocumented yet.
        * @see import('playwright-core').JSHandle.jsonValue
        */
-      const [firstIsString, args = []] = await (argHandles[0] as typeof argHandles[0] | undefined)
-        ?.evaluate((firstArg, passedArgs: unknown[]) => (
-          [typeof firstArg === 'string', passedArgs]
-        ), argHandles) || [];
+      const [firstIsString, args = []] = await argHandles[0].evaluate(
+        (firstArg, passedArgs: unknown[]) => [typeof firstArg === 'string', passedArgs],
+        argHandles,
+      );
 
       /**
        * If the first arg is not a string but mapped to a string, escape `%`.
@@ -325,7 +321,9 @@ export default class BrowserLogger {
       }
 
       return args;
-    })();
+    })()
+      // Fallback to the original message text.
+      .catch(() => [`[Incomplete] ${text}`]);
 
     switch (level) {
       case 'info':
@@ -358,7 +356,9 @@ export default class BrowserLogger {
   /**
    * Print a playwright browser error to console.
    */
-  readonly forwardError = (error: Error) => {
+  readonly forwardError = (webError: WebError) => {
+    const error = webError.error();
+
     // Leave errors without stack info as they are.
     if (!error.stack) {
       this.error([error]);
@@ -373,4 +373,25 @@ export default class BrowserLogger {
       ),
     ]);
   };
+
+  startForwarding() {
+    if (!this.browserContext) return;
+    this.browserContext.on('console', this.forwardConsole);
+    this.browserContext.on('weberror', this.forwardError);
+  }
+
+  pauseForwarding() {
+    if (!this.browserContext) return;
+    this.browserContext.off('console', this.forwardConsole);
+    this.browserContext.off('weberror', this.forwardError);
+  }
+
+  async stopForwarding() {
+    this.pauseForwarding();
+    await this.lastPrint;
+  }
+
+  [Symbol.asyncDispose]() {
+    return this.stopForwarding();
+  }
 }

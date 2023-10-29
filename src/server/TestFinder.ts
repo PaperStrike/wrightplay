@@ -37,12 +37,7 @@ export default class TestFinder extends EventEmitter<TestFinderEventMap> impleme
     this.cwd = cwd;
     this.watch = watch;
 
-    if (watch) {
-      this.filesPromise = Promise.resolve([]);
-    } else {
-      this.filesPromise = this.searchFiles();
-      return;
-    }
+    if (!watch) return;
 
     // Parse pattern dirs to watch recursively
     let patternDirs: string[] = [];
@@ -81,7 +76,7 @@ export default class TestFinder extends EventEmitter<TestFinderEventMap> impleme
     );
   }
 
-  private filesPromise: Promise<string[]>;
+  private filesPromise = Promise.resolve<string[]>([]);
 
   private searchFiles() {
     return globby(this.patterns, {
@@ -93,12 +88,9 @@ export default class TestFinder extends EventEmitter<TestFinderEventMap> impleme
 
   /**
    * Update the test file list.
-   * - In non-watch mode,
-   *   - is automatically called once when constructed.
-   *   - should be manually called to update the files.
-   * - In watch mode,
-   *   - should be manually called once before getting the files.
-   *   - is automatically called on file changes.
+   *
+   * In watch mode, this will be automatically called on file changes,
+   * but you may still need to call this once for the initial file list.
    */
   updateFiles() {
     this.filesPromise = this.searchFiles().then((files) => {
@@ -181,7 +173,7 @@ export default class TestFinder extends EventEmitter<TestFinderEventMap> impleme
     }, 100);
   };
 
-  [Symbol.dispose]() {
+  dispose() {
     if (!this.watch) return;
 
     this.patternWatcherMap.forEach((watcher) => {
@@ -191,5 +183,9 @@ export default class TestFinder extends EventEmitter<TestFinderEventMap> impleme
     this.relevantWatcherMap.forEach((watcher) => {
       watcher.close();
     });
+  }
+
+  [Symbol.dispose]() {
+    return this.dispose();
   }
 }

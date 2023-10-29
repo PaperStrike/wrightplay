@@ -1,6 +1,8 @@
 import type http from 'node:http';
 import WebSocket, { WebSocketServer } from 'ws';
 import type playwright from 'playwright';
+
+import '../../common/utils/patchDisposable.js';
 import * as Serializer from '../../common/serializer/index.js';
 import {
   RouteClientMeta,
@@ -12,7 +14,7 @@ import {
 /**
  * WebSocket Server that processes messages from the page client into Playwright actions
  */
-export default class WSServer {
+export default class WSServer implements AsyncDisposable {
   private readonly uuid: string;
 
   private readonly wss: WebSocketServer;
@@ -30,13 +32,14 @@ export default class WSServer {
     this.wss = new WebSocketServer({
       server,
       path: '/__wrightplay__',
+      clientTracking: false,
     });
     this.wss.on('connection', (ws) => {
       ws.addEventListener('message', (event) => {
-        if (event.data !== uuid) return;
-        ws.once('close', () => {
-          this.client = undefined;
-        });
+        if (event.data !== uuid) {
+          ws.close(1008, 'Invalid UUID');
+          return;
+        }
         ws.addEventListener('message', this.onMessage);
         this.client = ws;
       }, { once: true });
@@ -44,7 +47,7 @@ export default class WSServer {
   }
 
   hasClient() {
-    return this.client !== undefined;
+    return this.client?.readyState === WebSocket.OPEN;
   }
 
   async reset() {
@@ -175,7 +178,7 @@ export default class WSServer {
         return;
       }
       const { client } = this;
-      if (!client || client.readyState !== WebSocket.OPEN) {
+      if (client?.readyState !== WebSocket.OPEN) {
         await route.continue();
         return;
       }
@@ -279,5 +282,16 @@ export default class WSServer {
       result: JSON.stringify(Serializer.serializeValue(result, null)),
       error,
     }));
+  }
+
+  async dispose() {
+    this.client?.close(1000, 'Server Disposed');
+    await new Promise((resolve) => {
+      this.wss.close(resolve);
+    });
+  }
+
+  [Symbol.asyncDispose]() {
+    return this.dispose();
   }
 }
