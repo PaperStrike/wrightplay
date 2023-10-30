@@ -272,7 +272,7 @@ export default class Runner {
     }
 
     // In headed / watch mode, wait for the browser to close.
-    if (this.watch || !this.headless) {
+    if ((this.watch || !this.headless) && !page.isClosed()) {
       await page.waitForEvent('close', { timeout: 0 });
     }
 
