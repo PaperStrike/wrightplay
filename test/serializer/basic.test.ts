@@ -1,8 +1,8 @@
 import { describe, expect, it } from '../default.setup.js';
 import Handle from '../../src/common/serializer/Handle.js';
 import {
-  SerializableValue,
-  SerializedValue,
+  type SerializableValue,
+  type SerializedValue,
   serializeValue,
   noFallback,
   parseSerializedValue,

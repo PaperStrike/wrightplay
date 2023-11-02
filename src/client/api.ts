@@ -11,7 +11,7 @@ import type {
   RouteOptions,
 } from './ws/route/RouteHandler.js';
 
-export {
+export type {
   Route,
   RouteRequest,
   RouteHandler,

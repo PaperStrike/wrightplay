@@ -1,7 +1,13 @@
 import { createRequire } from 'node:module';
 import { Command, Option } from '@commander-js/extra-typings';
-import Runner, { BrowserServerOptions, RunnerOptions } from '../server/Runner.js';
-import { ConfigOptions } from '../server/api.js';
+
+import {
+  Runner,
+  type BrowserServerOptions,
+  type RunnerOptions,
+  type ConfigOptions,
+} from '../server/api.js';
+
 import configSearcher from './configSearcher.js';
 
 const require = createRequire(import.meta.url);

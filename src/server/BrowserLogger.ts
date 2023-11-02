@@ -1,5 +1,5 @@
 import util from 'util';
-import { SourceMap, SourceMapPayload } from 'module';
+import { SourceMap, type SourceMapPayload } from 'module';
 
 import chalk from 'chalk';
 import type { BrowserContext, ConsoleMessage, WebError } from 'playwright';

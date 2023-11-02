@@ -1,4 +1,4 @@
-import { SerializedValue } from './Serializable.js';
+import type { SerializedValue } from './Serializable.js';
 
 const innerParseSerializedValue = (
   value: SerializedValue,
