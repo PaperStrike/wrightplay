@@ -2,9 +2,9 @@ import type playwright from 'playwright';
 import {
   createRouteMeta,
   parseServerMeta,
-  RouteServerMeta,
+  type RouteServerMeta,
 } from '../../common/ws/message.js';
-import RouteHandler, { RouteHandlerCallback, RouteMatcher, RouteOptions } from './route/RouteHandler.js';
+import RouteHandler, { type RouteHandlerCallback, type RouteMatcher, type RouteOptions } from './route/RouteHandler.js';
 import RouteRequest from './route/RouteRequest.js';
 import Route from './route/Route.js';
 import HostHandle from './handle/HostHandle.js';

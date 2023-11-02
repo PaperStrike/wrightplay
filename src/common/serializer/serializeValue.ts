@@ -1,5 +1,5 @@
 import Handle from './Handle.js';
-import { SerializableValue, SerializedValue } from './Serializable.js';
+import type { SerializableValue, SerializedValue } from './Serializable.js';
 
 function isURL(obj: unknown, objStr: string): obj is URL {
   return obj instanceof URL || objStr === '[object URL]';

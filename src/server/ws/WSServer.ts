@@ -5,10 +5,11 @@ import type playwright from 'playwright';
 import '../../common/utils/patchDisposable.js';
 import * as Serializer from '../../common/serializer/index.js';
 import {
-  RouteClientMeta,
-  HandleClientMeta,
+  type RouteClientMeta,
+  type HandleClientMeta,
   parseClientMeta,
-  createRouteMeta, createHandleMeta,
+  createRouteMeta,
+  createHandleMeta,
 } from '../../common/ws/message.js';
 
 /**

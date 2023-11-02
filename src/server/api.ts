@@ -1,4 +1,4 @@
-import { RunnerOptions } from './Runner.js';
+import type { RunnerOptions } from './Runner.js';
 
 export * from './BrowserLogger.js';
 export { default as BrowserLogger } from './BrowserLogger.js';

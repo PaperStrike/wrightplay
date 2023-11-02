@@ -3,7 +3,7 @@ import {
   contextRoute,
   contextUnroute,
   bypassFetch,
-  Route,
+  type Route,
 } from '../../src/client/api.js';
 
 describe('basic routing', () => {

@@ -2,7 +2,7 @@ import http from 'node:http';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import type { AddressInfo } from 'node:net';
-import { SourceMapPayload } from 'node:module';
+import type { SourceMapPayload } from 'node:module';
 
 import { lookup as mimeLookup } from 'mrmime';
 import getPort, { portNumbers } from 'get-port';

@@ -1,8 +1,8 @@
 import {
   createHandleMeta,
   parseServerMeta,
-  HandleMetaBase,
-  HandleClientMeta,
+  type HandleMetaBase,
+  type HandleClientMeta,
 } from '../../../common/ws/message.js';
 import * as Serializer from '../../../common/serializer/index.js';
 
