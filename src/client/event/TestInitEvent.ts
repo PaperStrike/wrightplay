@@ -1,19 +1,19 @@
-export type TestInitEventName = `__wrightplay_${string}_init__`;
+export type TestInitEventName = `__wrightplay_${string}_init__`
 
 declare global {
-  interface WindowEventMap {
-    [name: TestInitEventName]: TestInitEvent;
-  }
+  // Declaration merging
+  // eslint-disable-next-line @typescript-eslint/no-empty-object-type
+  interface WindowEventMap extends Record<TestInitEventName, TestInitEvent> {}
 }
 
 export default class TestInitEvent extends Event {
   static getName(uuid: string): TestInitEventName {
-    return `__wrightplay_${uuid}_init__`;
+    return `__wrightplay_${uuid}_init__`
   }
 
-  declare type: TestInitEventName;
+  declare type: TestInitEventName
 
   constructor(uuid: string) {
-    super(TestInitEvent.getName(uuid));
+    super(TestInitEvent.getName(uuid))
   }
 }

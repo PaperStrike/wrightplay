@@ -1,6 +1,6 @@
-import test from 'tape';
+import test from 'tape'
 
 test('should work', (t) => {
-  t.ok(true);
-  t.end();
-});
+  t.ok(true)
+  t.end()
+})

@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-floating-promises */
-import { test } from 'zora';
+import { test } from 'zora'
 
 test('should work', ({ ok }) => {
-  ok(true);
-});
+  ok(true)
+})

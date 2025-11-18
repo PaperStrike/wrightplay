@@ -1,14 +1,14 @@
-import process from 'process';
-import { done } from 'wrightplay';
+import process from 'process'
+import { done } from 'wrightplay'
 
-globalThis.process = process;
+globalThis.process = process
 
-const { onFailure, onFinish } = await import('tape');
+const { onFailure, onFinish } = await import('tape')
 
-let exitCode = 0;
+let exitCode = 0
 onFailure(() => {
-  exitCode = 1;
-});
+  exitCode = 1
+})
 onFinish(() => {
-  done(exitCode);
-});
+  done(exitCode)
+})

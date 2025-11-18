@@ -1,3 +1,5 @@
-import { test } from 'uvu';
+import { test } from 'uvu'
 
-test('should work', () => {});
+test('should work', () => {
+  // placeholder
+})

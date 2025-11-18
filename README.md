@@ -63,11 +63,11 @@ For more available options and descriptions, check out
 #### Listen to test ready
 
 ```ts
-import { onInit } from 'wrightplay';
+import { onInit } from 'wrightplay'
 
 onInit(() => {
-  startTesting();
-});
+  startTesting()
+})
 ```
 
 Pass a callback to `onInit` to act when all the test files got successfully imported. If called multiple times, `onInit` will call the callbacks in order. If a callback returns a promise, it will wait until the promise get fulfilled before calling the next callback. If a callback throws an error, the process will exit unsuccessfully.
@@ -75,12 +75,12 @@ Pass a callback to `onInit` to act when all the test files got successfully impo
 #### Indicate the result of your tests
 
 ```ts
-import { done } from 'wrightplay';
+import { done } from 'wrightplay'
 
 onTestEnd((failures) => {
   // Pass the desired process exit number to `done`.
-  done(failures > 0 ? 1 : 0);
-});
+  done(failures > 0 ? 1 : 0)
+})
 ```
 
 The process may never exit if you don't call this function.
@@ -104,14 +104,14 @@ wrightplay -s test/setup.ts test/**/*.spec.ts
 If you want Node.js API,
 
 ```ts
-import { Runner } from 'wrightplay/node';
+import { Runner } from 'wrightplay/node'
 
 const runner = new Runner({
   setup: 'test/setup.ts',
   tests: 'test/**/*.spec.ts',
-});
+})
 
-process.exit(await runner.runTests());
+process.exit(await runner.runTests())
 ```
 
 Check [Options](#options) for full option list.
@@ -129,12 +129,12 @@ Just like you can pass a function from node to browser to run via `page.evaluate
 Similar to [`JSHandle.evaluate` in Playwright](https://playwright.dev/docs/api/class-jshandle#js-handle-evaluate).
 
 ```ts
-import { pageHandle } from 'wrightplay';
+import { pageHandle } from 'wrightplay'
 
-const screenshotPath = 'screenshots/1.png';
+const screenshotPath = 'screenshots/1.png'
 await pageHandle.evaluate(async (page, path) => {
-  await page.screenshot({ path });
-}, screenshotPath);
+  await page.screenshot({ path })
+}, screenshotPath)
 ```
 
 ### EvaluateHandle
@@ -142,13 +142,13 @@ await pageHandle.evaluate(async (page, path) => {
 Similar to [`JSHandle.evaluateHandle` in Playwright](https://playwright.dev/docs/api/class-jshandle#js-handle-evaluate-handle).
 
 ```ts
-import { pageHandle } from 'wrightplay';
+import { pageHandle } from 'wrightplay'
 
 const browserHandle = await pageHandle
-  .evaluateHandle((page) => page.context().browser());
+  .evaluateHandle(page => page.context().browser())
 
 // "103.0.5060.42" on chromium as of writing
-await browserHandle.evaluate((b) => b.version());
+await browserHandle.evaluate(b => b.version())
 ```
 
 ### Dispose
@@ -174,15 +174,15 @@ Dedicated API faster than wrapping `contextRoute.evaluate` for routing, uses `Ar
 Similar to [`browserContext.route` in Playwright](https://playwright.dev/docs/api/class-browsercontext#browser-context-route).
 
 ```ts
-import { contextRoute } from 'wrightplay';
+import { contextRoute } from 'wrightplay'
 
-const body = new Blob(['routed!']);
+const body = new Blob(['routed!'])
 await contextRoute('hello', (r) => {
-  r.fulfill({ body });
-}, { times: 1 });
+  r.fulfill({ body })
+}, { times: 1 })
 
 // "routed!"
-await (await fetch('hello')).text();
+await (await fetch('hello')).text()
 ```
 
 All the routes by this API will auto “unroute” on page unload.
@@ -218,7 +218,7 @@ You can use an array of option objects to represent multiple test runs that shou
 ```js
 export default {
   tests: 'test/**/*.spec.*',
-};
+}
 ```
 
 ### JSON
@@ -232,13 +232,13 @@ export default {
 ### TS
 
 ```ts
-import { ConfigOptions } from 'wrightplay/node';
+import { ConfigOptions } from 'wrightplay/node'
 
 const config: ConfigOptions = {
   tests: 'test/**/*.spec.*',
-};
+}
 
-export default config;
+export default config
 ```
 
 ## Options
@@ -328,7 +328,7 @@ or config file
 will make this available:
 
 ```ts
-const worker = new Worker('/worker.js');
+const worker = new Worker('/worker.js')
 // ...
 ```
 
@@ -413,21 +413,21 @@ In your `package.json`, add:
 #### Write mocha setup like
 
 ```ts
-import 'mocha';
-import { onInit, done } from 'wrightplay';
+import 'mocha'
+import { onInit, done } from 'wrightplay'
 
 mocha.setup({
   color: true,
   fullTrace: true,
   reporter: 'spec',
   ui: 'bdd',
-});
+})
 
 onInit(() => {
   mocha.run((failures) => {
-    done(failures > 0 ? 1 : 0);
-  });
-});
+    done(failures > 0 ? 1 : 0)
+  })
+})
 ```
 
 ### uvu
@@ -461,20 +461,20 @@ In `package.json`, add:
 #### Write tape setup like
 
 ```ts
-import process from 'process';
-import { done } from 'wrightplay';
+import process from 'process'
+import { done } from 'wrightplay'
 
-globalThis.process = process;
+globalThis.process = process
 
-const { onFailure, onFinish } = await import('tape');
+const { onFailure, onFinish } = await import('tape')
 
-let exitCode = 0;
+let exitCode = 0
 onFailure(() => {
-  exitCode = 1;
-});
+  exitCode = 1
+})
 onFinish(() => {
-  done(exitCode);
-});
+  done(exitCode)
+})
 ```
 
 ### Zora
@@ -484,34 +484,36 @@ onFinish(() => {
 To setup zora, pipe zora reporters to read test results:
 
 ```ts
-import { hold, report, createTAPReporter } from 'zora';
-import { done, onInit } from 'wrightplay';
+import { hold, report, createTAPReporter } from 'zora'
+import { done, onInit } from 'wrightplay'
 
 // Hold zora default run
-hold();
+hold()
 
 // Record failed assertion
-const tapReporter = createTAPReporter();
+const tapReporter = createTAPReporter()
 async function* record(stream: Parameters<typeof tapReporter>[0]) {
-  let exitCode = 0;
+  let exitCode = 0
   for await (const msg of stream) {
     if (msg.type === 'ASSERTION' && !msg.data.pass) {
-      exitCode = 1;
-    } else if (msg.type === 'ERROR') {
-      done(1);
-    } if (msg.type === 'TEST_END') {
-      done(exitCode);
+      exitCode = 1
     }
-    yield msg;
+    else if (msg.type === 'ERROR') {
+      done(1)
+    }
+    else if (msg.type === 'TEST_END') {
+      done(exitCode)
+    }
+    yield msg
   }
 }
 
 onInit(async () => {
   // Run zora with piped reporter
   await report({
-    reporter: (stream) => tapReporter(record(stream)),
-  });
-});
+    reporter: stream => tapReporter(record(stream)),
+  })
+})
 ```
 
 ---

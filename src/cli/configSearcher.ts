@@ -1,21 +1,22 @@
-import { lilconfig } from 'lilconfig';
-import jiti from 'jiti';
+import { lilconfig } from 'lilconfig'
+import jiti from 'jiti'
 
-const moduleName = 'wrightplay';
+const moduleName = 'wrightplay'
 
 const tsLoader = jiti('', {
   interopDefault: true,
-});
+})
 
 const configLoader = (filepath: string) => {
   try {
-    return tsLoader(filepath) as unknown;
-  } catch (error) {
+    return tsLoader(filepath) as unknown
+  }
+  catch (error) {
     throw new Error(`Failed to load TS config ${filepath}`, {
       cause: error,
-    });
+    })
   }
-};
+}
 
 const searcher = lilconfig(moduleName, {
   searchPlaces: [
@@ -51,6 +52,6 @@ const searcher = lilconfig(moduleName, {
     '.mts': configLoader,
     '.cts': configLoader,
   },
-});
+})
 
-export default searcher;
+export default searcher

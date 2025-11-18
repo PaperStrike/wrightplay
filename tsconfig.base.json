@@ -8,6 +8,7 @@
     "lib": ["ESNext"],
     "module": "ESNext",
     "moduleResolution": "Bundler",
+    "noUncheckedIndexedAccess": true,
     "outDir": "./build",
     "skipLibCheck": true,
     "sourceMap": true,

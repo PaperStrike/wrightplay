@@ -8,30 +8,30 @@
 
 declare global {
   interface URL {
-    hash: string;
-    host: string;
-    hostname: string;
-    href: string;
-    readonly origin: string;
-    password: string;
-    pathname: string;
-    port: string;
-    protocol: string;
-    search: string;
-    readonly searchParams: URLSearchParams;
-    username: string;
-    toString(): string;
-    toJSON(): string;
+    hash: string
+    host: string
+    hostname: string
+    href: string
+    readonly origin: string
+    password: string
+    pathname: string
+    port: string
+    protocol: string
+    search: string
+    readonly searchParams: URLSearchParams
+    username: string
+    toString(): string
+    toJSON(): string
   }
 
   interface URLConstructor {
-    new(input: string, base?: string | URL): URL;
-    createObjectURL(object: Blob): string;
-    revokeObjectURL(url: string): void;
-    readonly prototype: URL;
+    new(input: string, base?: string | URL): URL
+    createObjectURL(object: Blob): string
+    revokeObjectURL(url: string): void
+    readonly prototype: URL
   }
 
-  const URL: URLConstructor;
+  const URL: URLConstructor
 }
 
-export {};
+export {}

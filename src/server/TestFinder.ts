@@ -1,65 +1,65 @@
-import fs from 'node:fs';
-import path from 'node:path';
-import { globby } from 'globby';
-import globParent from 'glob-parent';
+import fs from 'node:fs'
+import path from 'node:path'
+import { globby } from 'globby'
+import globParent from 'glob-parent'
 
-import '../common/utils/patchDisposable.js';
-import EventEmitter from './utils/TypedEventEmitter.js';
+import '../common/utils/patchDisposable.js'
+import EventEmitter from './utils/TypedEventEmitter.js'
 
 export interface TestFinderOptions {
-  patterns: string | readonly string[];
-  cwd: string;
-  watch?: boolean;
+  patterns: string | readonly string[]
+  cwd: string
+  watch?: boolean
 }
 
 export interface TestFinderEventMap {
-  change: [];
+  change: []
 }
 
 export default class TestFinder extends EventEmitter<TestFinderEventMap> implements Disposable {
-  private readonly patterns: string | readonly string[];
+  private readonly patterns: string | readonly string[]
 
-  private readonly cwd: string;
+  private readonly cwd: string
 
-  private readonly watch: boolean;
+  private readonly watch: boolean
 
-  private readonly patternDirs: string[] = [];
+  private readonly patternDirs: string[] = []
 
-  private readonly patternWatcherMap = new Map<string, fs.FSWatcher>();
+  private readonly patternWatcherMap = new Map<string, fs.FSWatcher>()
 
   constructor({
     patterns,
     cwd,
     watch = false,
   }: TestFinderOptions) {
-    super();
-    this.patterns = patterns.concat(); // clone
-    this.cwd = cwd;
-    this.watch = watch;
+    super()
+    this.patterns = patterns.concat() // clone
+    this.cwd = cwd
+    this.watch = watch
 
-    if (!watch) return;
+    if (!watch) return
 
     // Parse pattern dirs to watch recursively
-    let patternDirs: string[] = [];
-    const patternList = (typeof patterns === 'string' ? [patterns] : patterns);
+    let patternDirs: string[] = []
+    const patternList = (typeof patterns === 'string' ? [patterns] : patterns)
     patternList.forEach((pattern) => {
       // Skip negated patterns
-      if (pattern.startsWith('!')) return;
+      if (pattern.startsWith('!')) return
 
       // Resolve its parent absolute dir path
-      const candidateDir = path.resolve(cwd, globParent(pattern));
+      const candidateDir = path.resolve(cwd, globParent(pattern))
 
       // Skip if the pattern dir is already covered
-      if (patternDirs.some((dir) => candidateDir.startsWith(dir))) return;
+      if (patternDirs.some(dir => candidateDir.startsWith(dir))) return
 
       // Remove dirs that will be covered by the candidate dir
-      patternDirs = patternDirs.filter((dir) => !dir.startsWith(candidateDir));
+      patternDirs = patternDirs.filter(dir => !dir.startsWith(candidateDir))
 
       // Accept the candidate dir
-      patternDirs.push(candidateDir);
-    });
+      patternDirs.push(candidateDir)
+    })
 
-    this.patternDirs = patternDirs;
+    this.patternDirs = patternDirs
 
     // Create pattern watchers
     this.patternWatcherMap = new Map(
@@ -67,23 +67,23 @@ export default class TestFinder extends EventEmitter<TestFinderEventMap> impleme
         const watcher = fs.watch(dir, {
           persistent: false,
           recursive: true,
-        });
+        })
 
-        watcher.on('change', this.onChange);
+        watcher.on('change', this.onChange)
 
-        return [dir, watcher];
+        return [dir, watcher]
       }),
-    );
+    )
   }
 
-  private filesPromise = Promise.resolve<string[]>([]);
+  private filesPromise = Promise.resolve<string[]>([])
 
   private searchFiles() {
     return globby(this.patterns, {
       cwd: this.cwd,
       absolute: true,
       gitignore: true,
-    });
+    })
   }
 
   /**
@@ -94,19 +94,19 @@ export default class TestFinder extends EventEmitter<TestFinderEventMap> impleme
    */
   updateFiles() {
     this.filesPromise = this.searchFiles().then((files) => {
-      this.emit('change');
-      return files;
-    });
+      this.emit('change')
+      return files
+    })
   }
 
   /**
    * Returns a promise that resolves to the list by the last `updateFiles` call.
    */
   getFiles() {
-    return this.filesPromise;
+    return this.filesPromise
   }
 
-  private relevantWatcherMap = new Map<string, fs.FSWatcher>();
+  private relevantWatcherMap = new Map<string, fs.FSWatcher>()
 
   /**
    * Set additional files to watch.
@@ -114,78 +114,78 @@ export default class TestFinder extends EventEmitter<TestFinderEventMap> impleme
    */
   setRelevantFiles(files: string[]) {
     if (!this.watch) {
-      throw new Error('Cannot set relevant files when not watching');
+      throw new Error('Cannot set relevant files when not watching')
     }
 
-    const lastWatcherMap = this.relevantWatcherMap;
-    const watcherMap = new Map<string, fs.FSWatcher>();
+    const lastWatcherMap = this.relevantWatcherMap
+    const watcherMap = new Map<string, fs.FSWatcher>()
     files.forEach((file) => {
       // Use the parent dir to reduce the number of watchers.
-      const dir = path.dirname(path.resolve(this.cwd, file));
+      const dir = path.dirname(path.resolve(this.cwd, file))
 
-      let watcher = lastWatcherMap.get(dir);
+      let watcher = lastWatcherMap.get(dir)
 
       // reuse the existing watcher if possible
       if (watcher) {
-        watcherMap.set(dir, watcher);
-        lastWatcherMap.delete(dir);
-        return;
+        watcherMap.set(dir, watcher)
+        lastWatcherMap.delete(dir)
+        return
       }
 
       // return if already watched by another relevant file
       if (watcherMap.has(dir)) {
-        return;
+        return
       }
 
       // return if already watched by a pattern
-      if (this.patternDirs.some((patternDir) => dir.startsWith(patternDir))) {
-        return;
+      if (this.patternDirs.some(patternDir => dir.startsWith(patternDir))) {
+        return
       }
 
       // create a new watcher if not watched by any other
       watcher = fs.watch(dir, {
         persistent: false,
         recursive: false, // Yap, not recursive.
-      });
+      })
 
-      watcher.on('change', this.onChange);
+      watcher.on('change', this.onChange)
 
-      watcherMap.set(dir, watcher);
-    });
+      watcherMap.set(dir, watcher)
+    })
 
     lastWatcherMap.forEach((watcher) => {
-      watcher.close();
-    });
+      watcher.close()
+    })
 
-    this.relevantWatcherMap = watcherMap;
+    this.relevantWatcherMap = watcherMap
   }
 
-  private atomicTimeoutId: NodeJS.Timeout | null = null;
+  private atomicTimeoutId: NodeJS.Timeout | null = null
 
   private onChange = () => {
     if (this.atomicTimeoutId !== null) {
-      return;
+      return
     }
 
     this.atomicTimeoutId = setTimeout(() => {
-      this.atomicTimeoutId = null;
-      this.updateFiles();
-    }, 100);
-  };
+      this.atomicTimeoutId = null
+      this.updateFiles()
+    }, 100)
+  }
 
   dispose() {
-    if (!this.watch) return;
+    if (!this.watch) return
 
     this.patternWatcherMap.forEach((watcher) => {
-      watcher.close();
-    });
+      watcher.close()
+    })
 
     this.relevantWatcherMap.forEach((watcher) => {
-      watcher.close();
-    });
+      watcher.close()
+    })
   }
 
   [Symbol.dispose]() {
-    return this.dispose();
+    this.dispose()
   }
 }

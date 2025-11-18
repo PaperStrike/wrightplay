@@ -1,14 +1,14 @@
-import { createRouteMeta, parseServerMeta } from '../../../common/ws/message.js';
-import type RouteRequest from './RouteRequest.js';
+import { createRouteMeta, parseServerMeta } from '../../../common/ws/message.js'
+import type RouteRequest from './RouteRequest.js'
 
-export type RouteChain = (done: boolean) => Promise<void>;
+export type RouteChain = (done: boolean) => Promise<void>
 
-export type FallbackOverrides = {
-  url?: string;
-  method?: string;
-  headers?: Record<string, string>;
-  postData?: string | ArrayBuffer | ArrayBufferView;
-};
+export interface FallbackOverrides {
+  url?: string
+  method?: string
+  headers?: Record<string, string>
+  postData?: string | ArrayBuffer | ArrayBufferView
+}
 
 export default class Route {
   constructor(
@@ -17,7 +17,7 @@ export default class Route {
     private readonly req: RouteRequest,
   ) {}
 
-  protected handleResolve: ((done: boolean) => void) | null = null;
+  protected handleResolve: ((done: boolean) => void) | null = null
 
   /**
    * @internal
@@ -25,41 +25,42 @@ export default class Route {
   startHandling() {
     return new Promise<boolean>((resolve) => {
       this.handleResolve = (done) => {
-        this.handleResolve = null;
-        resolve(done);
-      };
-    });
+        this.handleResolve = null
+        resolve(done)
+      }
+    })
   }
 
   private assertNotHandled(): asserts this is { handleResolve: NonNullable<Route['handleResolve']> } {
     if (this.handleResolve === null) {
-      throw new Error('Route is already handled!');
+      throw new Error('Route is already handled!')
     }
   }
 
-  private resolveID = 0;
+  private resolveID = 0
 
   private async waitServerResolve() {
-    const { resolveID } = this;
-    this.resolveID += 1;
+    const { resolveID } = this
+    this.resolveID += 1
     await new Promise<void>((resolve, reject) => {
       const onMessage = ({ data }: MessageEvent) => {
-        if (typeof data !== 'string') return;
-        const meta = parseServerMeta(data);
+        if (typeof data !== 'string') return
+        const meta = parseServerMeta(data)
         if (meta.type !== 'route'
           || !('action' in meta)
           || meta.action !== 'resolve'
           || meta.id !== this.id
-          || meta.resolveID !== resolveID) return;
-        this.ws.removeEventListener('message', onMessage);
+          || meta.resolveID !== resolveID) return
+        this.ws.removeEventListener('message', onMessage)
         if (meta.error === undefined) {
-          resolve();
-        } else {
-          reject(new Error(meta.error));
+          resolve()
         }
-      };
-      this.ws.addEventListener('message', onMessage);
-    });
+        else {
+          reject(new Error(meta.error))
+        }
+      }
+      this.ws.addEventListener('message', onMessage)
+    })
   }
 
   /**
@@ -71,8 +72,8 @@ export default class Route {
       headers,
       method,
       url,
-    } = this.req.fallbackOverridesForContinue();
-    const hasPostData = postData !== undefined && postData !== null;
+    } = this.req.fallbackOverridesForContinue()
+    const hasPostData = postData !== undefined
     this.ws.send(createRouteMeta({
       action: 'continue',
       id: this.id,
@@ -81,34 +82,36 @@ export default class Route {
       headers,
       method,
       url,
-    }));
-    if (hasPostData) this.ws.send(postData);
-    await this.waitServerResolve();
+    }))
+    if (hasPostData) this.ws.send(postData)
+    await this.waitServerResolve()
   }
 
+  // Intentional async to match playwright's API and retain future compatibility
+  // eslint-disable-next-line @typescript-eslint/require-await
   async fallback(options?: FallbackOverrides) {
-    this.assertNotHandled();
-    this.req.applyFallbackOverrides(options);
-    this.handleResolve(false);
+    this.assertNotHandled()
+    this.req.applyFallbackOverrides(options)
+    this.handleResolve(false)
   }
 
   async abort(errorCode?: string) {
-    this.assertNotHandled();
+    this.assertNotHandled()
     this.ws.send(createRouteMeta({
       action: 'abort',
       id: this.id,
       resolveID: this.resolveID,
       errorCode,
-    }));
-    await this.waitServerResolve();
-    this.handleResolve(true);
+    }))
+    await this.waitServerResolve()
+    this.handleResolve(true)
   }
 
   async continue(options?: FallbackOverrides) {
-    this.assertNotHandled();
-    this.req.applyFallbackOverrides(options);
-    await this.innerContinue();
-    this.handleResolve(true);
+    this.assertNotHandled()
+    this.req.applyFallbackOverrides(options)
+    await this.innerContinue()
+    this.handleResolve(true)
   }
 
   async fulfill({
@@ -120,39 +123,40 @@ export default class Route {
     response,
     status,
   }: {
-    body?: string | ArrayBufferLike | Blob | ArrayBufferView | null;
-    contentType?: string;
-    headers?: Record<string, string>;
-    json?: unknown;
-    path?: string;
-    response?: Response;
-    status?: number;
+    body?: string | ArrayBufferLike | Blob | ArrayBufferView | null
+    contentType?: string
+    headers?: Record<string, string>
+    json?: unknown
+    path?: string
+    response?: Response
+    status?: number
   } = {}) {
-    this.assertNotHandled();
+    this.assertNotHandled()
 
-    let fulfillBody;
+    let fulfillBody
     if (json !== undefined) {
       if (body !== undefined) {
-        throw new Error('Can specify either body or json parameters');
+        throw new Error('Can specify either body or json parameters')
       }
-      fulfillBody = JSON.stringify(json);
-    } else {
-      fulfillBody = body;
+      fulfillBody = JSON.stringify(json)
+    }
+    else {
+      fulfillBody = body
     }
 
     if (fulfillBody === undefined) {
-      const responseAB = await response?.clone().arrayBuffer();
+      const responseAB = await response?.clone().arrayBuffer()
       if (responseAB && responseAB.byteLength > 0) {
-        fulfillBody = responseAB;
+        fulfillBody = responseAB
       }
     }
 
-    let fulfillContentType = contentType;
+    let fulfillContentType = contentType
     if (fulfillContentType === undefined && json !== undefined) {
-      fulfillContentType = 'application/json';
+      fulfillContentType = 'application/json'
     }
 
-    const hasBody = fulfillBody !== undefined && fulfillBody !== null;
+    const hasBody = fulfillBody !== undefined && fulfillBody !== null
     this.ws.send(createRouteMeta({
       action: 'fulfill',
       id: this.id,
@@ -162,20 +166,22 @@ export default class Route {
       headers: headers ?? (
         response && [...response.headers]
           .reduce((acc: Record<string, string>, [key, value]) => {
-            const lowerKey = key.toLowerCase();
-            acc[lowerKey] = acc[lowerKey] ? `${acc[lowerKey]},${value}` : value;
-            return acc;
+            const lowerKey = key.toLowerCase()
+            acc[lowerKey] = acc[lowerKey] ? `${acc[lowerKey]},${value}` : value
+            return acc
           }, {})
       ),
       path,
       status: status ?? response?.status,
-    }));
-    if (hasBody) this.ws.send(fulfillBody as NonNullable<typeof fulfillBody>);
-    await this.waitServerResolve();
-    this.handleResolve(true);
+    }))
+
+    // @ts-expect-error TODO find out why TS is unable to infer that hasBody implies fulfillBody is defined while typescript-eslint can
+    if (hasBody) this.ws.send(fulfillBody)
+    await this.waitServerResolve()
+    this.handleResolve(true)
   }
 
   request() {
-    return this.req;
+    return this.req
   }
 }

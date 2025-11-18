@@ -1,1 +1,3 @@
-it('should work', () => {});
+it('should work', () => {
+  // placeholder
+})

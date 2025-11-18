@@ -1,5 +1,5 @@
 #!/usr/bin/env node
 
-import { program } from './api.js';
+import { program } from './api.js'
 
-program.parse();
+program.parse()

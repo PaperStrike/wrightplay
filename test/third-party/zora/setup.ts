@@ -1,29 +1,30 @@
-/* eslint-disable no-restricted-syntax */
-import { hold, report, createTAPReporter } from 'zora';
-import { done, onInit } from 'wrightplay';
+import { hold, report, createTAPReporter } from 'zora'
+import { done, onInit } from 'wrightplay'
 
 // Hold zora default run
-hold();
+hold()
 
 // Record failed assertion
-const tapReporter = createTAPReporter();
+const tapReporter = createTAPReporter()
 async function* record(stream: Parameters<typeof tapReporter>[0]) {
-  let exitCode = 0;
+  let exitCode = 0
   for await (const msg of stream) {
     if (msg.type === 'ASSERTION' && !msg.data.pass) {
-      exitCode = 1;
-    } else if (msg.type === 'ERROR') {
-      done(1);
-    } if (msg.type === 'TEST_END') {
-      done(exitCode);
+      exitCode = 1
     }
-    yield msg;
+    else if (msg.type === 'ERROR') {
+      done(1)
+    }
+    if (msg.type === 'TEST_END') {
+      done(exitCode)
+    }
+    yield msg
   }
 }
 
 onInit(async () => {
   // Run zora with piped reporter
   await report({
-    reporter: (stream) => tapReporter(record(stream)),
-  });
-});
+    reporter: stream => tapReporter(record(stream)),
+  })
+})
